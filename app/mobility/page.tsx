@@ -28,13 +28,12 @@ const ascent = totalAscent(RIDGE_TRANSECT);
 export default function Page() {
   return (
     <div>
-      <PageHeader index="03 · Mobility" title="Passenger-kilometres per kilowatt-hour">
-        Traffic is conventionally counted in vehicles per hour, which measures the thing being
-        managed rather than the thing being consumed. Reduce every mode to the energy it
-        spends moving one person one kilometre and the modes stop being a menu of preferences
-        and become a ladder spanning a factor of fifty. In a city whose development capacity
-        is priced in nitrogen and whose land is fixed, that ladder is the shortest route to
-        both.
+      <PageHeader index="03 · Mobility" title="How much energy each way of travelling uses">
+        Traffic is normally counted in vehicles per hour. That measures what is being managed,
+        not what is being used up. Measure instead the energy each way of travelling spends
+        moving one person one kilometre, and the options stop being a matter of taste: the
+        best is about fifty times better than the worst. In a city where building permission
+        depends on nitrogen from driving, that is the fastest thing to fix.
       </PageHeader>
 
       <section className="mb-4 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
@@ -65,7 +64,7 @@ export default function Page() {
 
       <Figure
         n="01"
-        title="The ladder"
+        title="Energy used per person per kilometre"
         deck="Passenger-kilometres delivered per kilowatt-hour, on a logarithmic axis. Energy is counted where it enters the vehicle — fuel in the tank, electricity at the battery, food at the mouth — and occupancy is the observed average rather than the design capacity."
         klass="engineering"
         sources={["physics", "cbs"]}
@@ -75,7 +74,7 @@ export default function Page() {
         <EnergyLadder />
       </Figure>
 
-      <Section title="What the ladder deliberately leaves out">
+      <Section title="What this leaves out">
         <Prose>
           <p>
             Upstream chains are held apart from the ladder rather than folded into it. Folding
@@ -116,7 +115,7 @@ export default function Page() {
 
       <Figure
         n="02"
-        title="Energy and land are the same axis"
+        title="The modes that waste energy also waste space"
         deck="Energy per passenger-kilometre against plan area occupied per passenger at operating speed, both logarithmic. Private modes are picked out."
         klass="engineering"
         sources={["physics"]}
@@ -137,7 +136,7 @@ export default function Page() {
         </Prose>
         <Figure
           n="03"
-          title="A traverse of the built-up area, west to east"
+          title="The hill across Enschede, west to east"
           deck="Elevation above datum along a coarse transect from the low ground west of the city, over the ridge through the centre, and down toward the Glanerbeek and the border. Hover to read a point."
           klass="official"
           sources={["ahn"]}

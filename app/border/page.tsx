@@ -21,13 +21,12 @@ const gain = accessiblePopulation(30, integrated.value) - accessiblePopulation(3
 export default function Page() {
   return (
     <div>
-      <PageHeader index="05 · Border" title="A catchment cut by a chord">
-        Every piece of fixed infrastructure in a city — a rail terminus, a hospital, a
-        university, a heat network — recovers its cost from the population inside some travel
-        radius, and that population is normally proportional to the area of a disc. Enschede's
-        disc is cut {BORDER_DISTANCE_KM} kilometres from its centre. The land beyond is not
-        empty; it is institutionally separate, which is a different problem with a different
-        remedy.
+      <PageHeader index="05 · Border" title="The border cuts the city's market">
+        A hospital, a university, a station or a heat network pays for itself out of the people
+        who live within travelling distance. That area is normally a circle. Enschede's circle
+        is cut {BORDER_DISTANCE_KM} kilometres from the centre by the German border. The land
+        on the other side is not empty — Gronau is right there — but it is a different country,
+        which is a different problem with a different fix.
       </PageHeader>
 
       <section className="mb-4 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
@@ -56,7 +55,7 @@ export default function Page() {
 
       <Figure
         n="01"
-        title="The geometry, and the membrane over it"
+        title="How much of the city's market the border removes"
         deck="The shaded ground is the catchment the city can draw on. Ground east of the line counts only to the extent that the border is permeable. Adjust the radius and the permeability; the scenario buttons set permeability to the values used elsewhere on this page."
         klass="derived"
         sources={["cbs", "pdok"]}
@@ -92,7 +91,7 @@ export default function Page() {
 
       <Figure
         n="02"
-        title="Catchment against radius, by permeability"
+        title="How the loss grows with distance"
         deck="Effective catchment as a percentage of the full disc an interior city would enjoy, at three permeabilities. Values labelled at the right-hand end of each line."
         klass="derived"
         sources={["cbs"]}
@@ -101,7 +100,7 @@ export default function Page() {
         <CatchmentCurve />
       </Figure>
 
-      <Section title="What this reframes">
+      <Section title="Why this matters">
         <Prose>
           <p>
             Read alongside the rest of this platform, the border does something specific to the
@@ -130,7 +129,7 @@ export default function Page() {
         </Prose>
       </Section>
 
-      <Section title="Where this model is weak">
+      <Section title="What this model gets wrong">
         <Prose>
           <p>
             Three places, stated so they are not discovered as a rebuttal. The border is

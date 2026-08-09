@@ -6,14 +6,16 @@ import { useEffect, useState } from "react";
 import type { Route } from "next";
 
 const SECTIONS: { href: Route; label: string; index: string }[] = [
-  { href: "/", label: "Thesis", index: "00" },
+  { href: "/", label: "Start", index: "00" },
   { href: "/constraints", label: "Constraints", index: "01" },
   { href: "/nitrogen", label: "Nitrogen", index: "02" },
   { href: "/mobility", label: "Mobility", index: "03" },
   { href: "/access", label: "Access", index: "04" },
   { href: "/border", label: "Border", index: "05" },
   { href: "/energy", label: "Energy", index: "06" },
-  { href: "/methods", label: "Method", index: "07" },
+  { href: "/cape-town", label: "Cape Town", index: "07" },
+  { href: "/compare", label: "Both cities", index: "08" },
+  { href: "/methods", label: "Sources", index: "09" },
 ];
 
 export function Nav() {
@@ -23,8 +25,12 @@ export function Nav() {
     <header className="sticky top-0 z-20 border-b border-rule bg-surface-1/90 backdrop-blur-sm">
       <div className="mx-auto flex max-w-6xl items-center gap-6 px-6 py-3">
         <Link href="/" className="shrink-0 text-[0.8125rem] font-semibold tracking-tight">
-          Enschede
-          <span className="ml-1.5 font-normal text-ink-3">spatial constraints</span>
+          Cape Town &amp; Enschede
+          {/* The tagline is the first thing to go on a narrow screen — it costs
+              8px of overflow at 390px and the section list needs the room. */}
+          <span className="ml-1.5 hidden font-normal text-ink-3 sm:inline">
+            what limits building
+          </span>
         </Link>
 
         <nav className="scroll-x -mx-2 flex-1">

@@ -530,7 +530,7 @@ def page_thesis() -> None:
 
     header(
         "Enschede · Twente, Overijssel",
-        "The binding constraints are fields, not boundaries",
+        "What actually stops Enschede building",
         "Enschede is normally described through its edges: a settlement boundary, a nature "
         "network, a national frontier four kilometres from the centre. Those edges are real and "
         "they are not what stops the city building. What stops it is a set of continuous "
@@ -587,7 +587,7 @@ def page_thesis() -> None:
 
 
 def page_constraints() -> None:
-    header("01 · Constraints", "Seven limits, two shapes",
+    header("01 · Constraints", "The seven things limiting building",
            "A geographic information system stores what its formats can hold, and the dominant "
            "format holds polygons. So constraints arrive as polygons, and the habit of thought "
            "that follows is that a constraint is a place. Most of the limits that actually bind in "
@@ -633,7 +633,7 @@ def page_nitrogen() -> None:
     location_only = 1 - lifetime_nox_kg(0.5, False) / baseline
     best_case = lifetime_nox_kg(0.2, True)
 
-    header("02 · Nitrogen", "A threshold of zero",
+    header("02 · Nitrogen", "Nitrogen: why the allowance is zero",
            "Since the programmatic approach was annulled in 2019, a project affecting a habitat "
            "already above its critical deposition value has no allowance to draw on. Not a small "
            "allowance — none. The consequence is that Enschede's development capacity is not "
@@ -724,7 +724,7 @@ def page_mobility() -> None:
     metabolic = climb_work_wh(TYPICAL_CLIMB_M) / HUMAN_EFFICIENCY
     battery = climb_work_wh(TYPICAL_CLIMB_M) / MOTOR_EFFICIENCY
 
-    header("03 · Mobility", "Passenger-kilometres per kilowatt-hour",
+    header("03 · Mobility", "How much energy each way of travelling uses",
            "Traffic is conventionally counted in vehicles per hour, which measures the thing being "
            "managed rather than the thing being consumed. Reduce every mode to the energy it "
            "spends moving one person one kilometre and the modes stop being a menu of preferences "
@@ -816,7 +816,7 @@ def page_access() -> None:
     walk_cov = coverage(effective_radius(walk))
     bike_cov = coverage(effective_radius(bike))
 
-    header("04 · Access", "The buffer radius is a policy variable",
+    header("04 · Access", "How many people can reach a station",
            "The standard measure of transit access is the share of an administrative area lying "
            "within a fixed walking buffer of a station. It is easy to compute, which is most of "
            "why it is used, and it smuggles in two assumptions. The first is that the radius is a "
@@ -979,7 +979,7 @@ def page_access() -> None:
 
 
 def page_border() -> None:
-    header("05 · Border", "A catchment cut by a chord",
+    header("05 · Border", "The border cuts the city's market",
            "Every piece of fixed infrastructure in a city — a rail terminus, a hospital, a "
            "university, a heat network — recovers its cost from the population inside some travel "
            "radius, and that population is normally proportional to the area of a disc. Enschede's "
@@ -1081,7 +1081,7 @@ def page_energy() -> None:
     solar_excl = units_for_target(t.loc["solar-field"]) * t.loc["solar-field", "exclusive_km2"]
     rooftop = rooftop_potential_twh()
 
-    header("06 · Energy", "Land per terawatt-hour",
+    header("06 · Energy", "How much land renewable energy needs",
            "The regional renewable target is argued about almost entirely in the language of "
            "landscape and consent. Converted into the two quantities that actually constrain it — "
            "area associated, and area withdrawn from other use — it produces an uncomfortable "
@@ -1144,7 +1144,7 @@ def page_energy() -> None:
 
 
 def page_method() -> None:
-    header("07 · Method", "Where every figure comes from",
+    header("07 · Method", "Where the numbers come from",
            "An analytical claim is only as strong as the weakest number feeding it, so the class of "
            "each figure travels with the figure rather than sitting in a footnote at the end. The "
            "four classes are deliberately coarse; a finer taxonomy would invite the author to hide "
@@ -1777,7 +1777,7 @@ PAGES = {
 
 def main() -> None:
     st.set_page_config(
-        page_title="Enschede — spatial constraints",
+        page_title="Cape Town and Enschede — what limits building",
         page_icon="◐",
         layout="wide",
         initial_sidebar_state="expanded",
@@ -1785,14 +1785,14 @@ def main() -> None:
     alt.data_transformers.disable_max_rows()
 
     with st.sidebar:
-        st.markdown("### Enschede")
-        st.caption("spatial constraints")
+        st.markdown("### Cape Town & Enschede")
+        st.caption("what limits building")
         choice = st.radio("Section", list(PAGES), label_visibility="collapsed")
         st.divider()
         st.caption(
-            "Every figure carries a class — official, derived, engineering or estimate — and the "
-            "source it came from. Where a figure is an estimate, the conclusion it supports is "
-            "written to survive its replacement, or it is not drawn."
+            "Every number says how solid it is — official, derived, engineering or estimate — "
+            "and where it came from. Where a number is only an estimate, the point it supports "
+            "is written so it still holds if the number changes."
         )
 
     PAGES[choice]()

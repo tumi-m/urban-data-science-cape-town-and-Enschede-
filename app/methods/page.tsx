@@ -69,11 +69,10 @@ const PIPELINE: { stage: string; detail: string }[] = [
 export default function Page() {
   return (
     <div>
-      <PageHeader index="07 · Method" title="Where every figure comes from">
-        An analytical claim is only as strong as the weakest number feeding it, so the class of
-        each figure travels with the figure rather than sitting in a footnote at the end. The
-        four classes below are deliberately coarse. A finer taxonomy would invite the author to
-        hide behind it.
+      <PageHeader index="07 · Method" title="Where the numbers come from">
+        An argument is only as good as its weakest number, so every figure carries a label
+        saying how solid it is, right next to the figure. There are only four labels on
+        purpose. More categories would just give the author somewhere to hide.
       </PageHeader>
 
       <Section title="Classes">
@@ -152,7 +151,7 @@ export default function Page() {
         </ol>
       </Section>
 
-      <Section title="Design rules the figures follow">
+      <Section title="Rules the charts follow">
         <Prose>
           <p>
             Chrome is subtracted once, in a shared configuration, so no chart restates it:

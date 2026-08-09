@@ -23,13 +23,12 @@ const rooftop = rooftopPotentialTWh();
 export default function Page() {
   return (
     <div>
-      <PageHeader index="06 · Energy" title="Land per terawatt-hour">
-        The regional renewable target is argued about almost entirely in the language of
-        landscape and consent. Converted into the two quantities that actually constrain it —
-        area associated, and area withdrawn from other use — it produces an uncomfortable
-        result. The technology that consumes the least land is the one the constraint regime
-        excludes, and the technology that survives the regime is the one that consumes the
-        most.
+      <PageHeader index="06 · Energy" title="How much land renewable energy needs">
+        The regional renewable target gets argued about in terms of landscape and objections.
+        Convert it instead into the two things that really limit it — how much land is involved,
+        and how much land is actually taken out of use — and an awkward result appears. The
+        option that uses the least land is the one the rules block. The one that gets built
+        uses the most.
       </PageHeader>
 
       <section className="mb-4 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
@@ -61,7 +60,7 @@ export default function Page() {
 
       <Figure
         n="01"
-        title="Associated land against land withdrawn"
+        title="Land used up, versus land merely nearby"
         deck={`Square kilometres needed for the ${TARGET.value} TWh per year target, on a logarithmic axis. Each technology is a pair: the land it is associated with, and the land it takes out of other use. The distance between the two ends is the finding.`}
         klass="derived"
         sources={["resTwente", "physics"]}
@@ -71,7 +70,7 @@ export default function Page() {
         <LandPerTWh />
       </Figure>
 
-      <Section title="Why the process selects the land-hungry option">
+      <Section title="Why the process picks the land-hungry option">
         <div className="mt-2">
           {TECHNOLOGIES.map((t) => (
             <article key={t.id} className="border-t border-rule py-5">
@@ -119,7 +118,7 @@ export default function Page() {
         </Prose>
       </Section>
 
-      <Section title="The option with no land cost at all">
+      <Section title="The option that uses no land">
         <Prose>
           <p>
             Enschede's roofs are worth roughly {rooftop.toFixed(2)} TWh per year — about{" "}

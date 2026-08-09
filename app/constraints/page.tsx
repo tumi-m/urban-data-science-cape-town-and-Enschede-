@@ -13,17 +13,17 @@ const polygons = CONSTRAINTS.filter((c) => c.shape === "polygon");
 export default function Page() {
   return (
     <div>
-      <PageHeader index="01 · Constraints" title="Seven limits, two shapes">
-        A geographic information system stores what its formats can hold, and the dominant
-        format holds polygons. So constraints arrive as polygons, and the habit of thought
-        that follows is that a constraint is a place. Most of the limits that actually bind
-        in Enschede are not places. They are quantities defined everywhere, drawn as polygons
-        only because someone traced the contour where the quantity crosses a number.
+      <PageHeader index="01 · Constraints" title="The seven things limiting building">
+        Planning software stores shapes. So limits get stored as shapes, and everyone starts
+        thinking a limit is a place. Most of the things actually stopping building in Enschede
+        are not places. They are measurements — nitrogen, noise, risk, travel time — that
+        exist everywhere and only look like a shape because someone drew a line where the
+        number crosses a threshold.
       </PageHeader>
 
       <Figure
         n="01"
-        title="Fields decay; boundaries step"
+        title="Measurements fade with distance; lines do not"
         deck="Intensity as a multiple of each constraint's own threshold, against distance from source, with the same constraint after a thirty per cent reduction at source shown pale. Schematic — the forms are the finding, not the values."
         klass="derived"
         sources={["aerius", "provOverijssel"]}
@@ -31,7 +31,7 @@ export default function Page() {
         <ConstraintShapes />
       </Figure>
 
-      <Section title="The five that are fields">
+      <Section title="Five that are measurements">
         <Prose>
           <p>
             Each of these is a quantity with a source, a decay, and a threshold. Each has a
@@ -47,7 +47,7 @@ export default function Page() {
         </div>
       </Section>
 
-      <Section title="The two that really are boundaries">
+      <Section title="Two that really are lines">
         <Prose>
           <p>
             These two are genuine polygons: inside or outside, with nothing underneath to
@@ -63,7 +63,7 @@ export default function Page() {
         </div>
       </Section>
 
-      <Section title="The consequence">
+      <Section title="What follows from this">
         <ol className="grid gap-x-10 gap-y-7 sm:grid-cols-2">
           {THESIS.corollaries.map((c, i) => (
             <li key={i} className="border-t border-rule pt-3">

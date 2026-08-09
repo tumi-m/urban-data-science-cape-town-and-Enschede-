@@ -129,17 +129,14 @@ export const CONSTRAINTS: Constraint[] = [
   },
 ];
 
-/**
- * The consequence of the taxonomy, stated plainly so that the rest of the
- * platform can be read against it.
- */
+/** What the taxonomy adds up to. */
 export const THESIS = {
   claim:
-    "Enschede's binding constraints are scalar fields, not polygons, and they are therefore reducible rather than merely negotiable.",
+    "Most of what stops Enschede building is a measurement, not a line on a map — and a measurement can be brought down.",
   corollaries: [
-    "A city that treats every constraint as a boundary can only relocate development. A city that recognises the fields can lower them, and lowering a field relaxes every location at once.",
-    "The dwelling's dominant nitrogen term is the traffic it attracts over fifty years, not the plant that builds it over eighteen months. Location and parking provision are therefore nitrogen policy, whatever they are called in the plan.",
-    "The renewable technology with the lowest land intensity is the one the field constraints exclude, so the search-area process selects for land consumption. The scarce resource is being spent to avoid the reducible one.",
-    "Where a field constraint has no de minimis threshold, compliance cost is dominated by modelling and legal exposure rather than by abatement, which favours developers large enough to carry both.",
+    "If you treat every limit as a boundary, all you can do is move development somewhere else. If you recognise the measurements, you can lower them — and that frees up every location at once.",
+    "Most of a home's nitrogen comes from the driving it causes over fifty years, not from building it. So where you put housing, and how much parking you give it, is nitrogen policy — whatever the plan calls it.",
+    "The renewable option that uses the least land is the one the rules block, so the search for sites keeps landing on the one that uses the most. The scarce thing is being spent to avoid the fixable one.",
+    "When a limit has no minimum allowance, the cost of complying is mostly modelling and legal risk rather than actually cutting emissions. That favours big developers, who can afford both.",
   ],
 };

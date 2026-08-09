@@ -29,13 +29,12 @@ const bestCase = lifetimeNOxKg(0.2, true);
 export default function Page() {
   return (
     <div>
-      <PageHeader index="02 · Nitrogen" title="A threshold of zero">
-        Since the programmatic approach was annulled in 2019, a project affecting a habitat
-        already above its critical deposition value has no allowance to draw on. Not a small
-        allowance — none. The consequence is that Enschede's development capacity is not
-        rationed by hectares but by a quantity measured in mol per hectare per year, and that
-        quantity is dominated by a term nobody thinks of as environmental policy: how much
-        driving each new dwelling causes.
+      <PageHeader index="02 · Nitrogen" title="Nitrogen: why the allowance is zero">
+        Since a 2019 court ruling, a project that adds nitrogen to a nature area already over
+        its limit gets no allowance at all. Not a small one — none. So what limits building in
+        Enschede is not hectares of land, it is a chemical measurement. And most of that
+        measurement comes from something nobody files under environmental policy: how much
+        driving each new home causes.
       </PageHeader>
 
       <section className="mb-4 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
@@ -67,7 +66,7 @@ export default function Page() {
 
       <Figure
         n="01"
-        title="Five of six habitats sit below the load"
+        title="Five of six habitats get more nitrogen than they can take"
         deck="Critical deposition values by habitat against the regional background. The bar is what the habitat tolerates; the vertical rule is what the region delivers. Raised bog, picked out, is under by a factor of four; only alluvial forest clears the rule."
         klass="official"
         sources={["aerius", "natura2000"]}
@@ -77,7 +76,7 @@ export default function Page() {
         <CriticalValues />
       </Figure>
 
-      <Section title="How the rule got this shape">
+      <Section title="How the rule came about">
         <ol className="mt-2">
           {CHRONOLOGY.map((c) => (
             <li key={c.date} className="grid gap-x-8 gap-y-2 border-t border-rule py-5 md:grid-cols-[8rem_1fr]">
@@ -103,7 +102,7 @@ export default function Page() {
 
       <Figure
         n="02"
-        title="A dwelling's nitrogen is its traffic"
+        title="Most of a home's nitrogen comes from driving, not building"
         deck="Nitrogen oxides per dwelling over a fifty-year life, split between construction plant and attracted traffic, under five combinations of location, parking provision and plant."
         klass="derived"
         sources={["cbs", "aerius"]}
@@ -113,7 +112,7 @@ export default function Page() {
         <DwellingNitrogen />
       </Figure>
 
-      <Section title="The levers, ordered by effect rather than by attention">
+      <Section title="The options, biggest effect first">
         <div className="mt-2">
           {LEVERS.map((l) => {
             const total = lifetimeNOxKg(l.carKmScale, l.electricPlant);
@@ -173,7 +172,7 @@ export default function Page() {
         </Prose>
       </Section>
 
-      <Section title="Standing assumptions">
+      <Section title="Assumptions used">
         <dl className="grid gap-x-10 gap-y-5 sm:grid-cols-2">
           <Assumption term="Car use per dwelling">
             {DWELLING.carKmPerYear.value.toLocaleString("en-GB")} vehicle-km per year.{" "}

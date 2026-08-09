@@ -4,11 +4,11 @@ import { Nav } from "@/components/Nav";
 
 export const metadata: Metadata = {
   title: {
-    default: "Enschede — spatial constraints",
-    template: "%s · Enschede spatial constraints",
+    default: "Cape Town and Enschede — what limits building",
+    template: "%s · Cape Town and Enschede",
   },
   description:
-    "A constraint analysis of Enschede in the unit economics of land, nitrogen and energy: which limits on the city are boundaries, which are scalar fields, and what follows from the difference.",
+    "Two cities that are hard to build in for opposite reasons. Cape Town has run out of land; Enschede has plenty and still cannot build. What kind of limit you have decides what you can do about it.",
 };
 
 /**
@@ -29,10 +29,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="border-t border-rule">
           <div className="mx-auto max-w-6xl px-6 py-8 text-[0.75rem] leading-relaxed text-ink-3">
             <p className="max-w-[62ch]">
-              Every figure on this site carries a class — official, derived, engineering or
-              estimate — and the source it came from. Where a figure is an estimate, the
-              conclusion it supports is written to survive its replacement, or it is not
-              drawn.
+              Every number on this site says how solid it is — official, derived, engineering
+              or estimate — and where it came from. Where a number is only an estimate, the
+              point it supports is written so it still holds if the number changes. If it
+              would not hold, it is not made.
             </p>
           </div>
         </footer>

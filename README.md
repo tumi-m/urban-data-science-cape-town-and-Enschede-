@@ -1,23 +1,27 @@
-# Enschede — spatial constraints
+# Cape Town and Enschede — what limits building
 
-A constraint analysis of Enschede (Twente, Overijssel) built as a data-visualisation
-platform, arguing one thing:
+Two cities that are hard to build in for opposite reasons.
 
-> **The limits that bind this city are scalar fields, not boundaries — and a field can be
-> lowered, where a boundary can only be moved or fought.**
+**Cape Town has run out of land.** Mountain on one side, ocean on two, about a third of
+what is left protected. What remains is a flat sandy plain that is both expensive to
+build on and the roof of the city's emergency water supply.
 
-Enschede is normally described through its edges: a settlement boundary, a nature
-network, a national frontier four kilometres from the centre. Those edges are real and
-they are not what stops the city building. What stops it is a set of continuous
-quantities with thresholds — deposited nitrogen, sound level, fatality probability,
-groundwater travel time, radar sightline — that a map can only render as a contour.
-Treating a contour as a fence discards the fact that the quantity underneath it can be
-reduced, and reducing it relaxes every location at once.
+**Enschede has plenty of land and still cannot build.** 140 km² for 161,000 people, only
+43 km² of it built on. What stops it is not land at all — it is nitrogen in the air,
+noise at the window, risk near a pipeline, travel time to a well.
+
+That difference is the point of putting them in one project:
+
+> **Some limits are lines on a map. Others are measurements. You can only argue about a
+> line, but you can actually bring a measurement down — and bringing it down frees up
+> every location at once.**
 
 ## What the analysis concludes
 
 | Section | Finding |
 |---|---|
+| **Cape Town** | 895 km² buildable out of 2,451 km² of city, for 4.8 million people. The urban edge and protected nature push housing onto the Cape Flats — loose sand that is expensive to build tall on, directly above the aquifer the city fell back on in the drought. Every decision is reasonable alone; together they trap the city. |
+| **Both cities** | The limit pushes building to the worst available place in both. The tool draws maps, so the answer always comes back as a map — even though Cape Town's real problem is that the trains stopped and Enschede's is a chemical measurement. In both, the cheapest fix is not construction. |
 | **Constraints** | Five of Enschede's seven principal limits are fields with a source, a decay and a lever. Two are genuine polygons — and those two dominate public argument about growth. |
 | **Nitrogen** | Since the 2019 annulment of the programmatic approach there is no de minimis increase: the test is whether a project rounds to zero. Over a fifty-year life, ~92% of a dwelling's nitrogen oxides come from the traffic it attracts, not the plant that builds it. Location and parking norms *are* emissions instruments. |
 | **Mobility** | The energy ladder spans a factor of ~46 from petrol car to electric bicycle in passenger-kilometres per kilowatt-hour. Enschede sits on an ice-pushed ridge, so a 30 m climb costs a rider ~31 Wh of food energy and a motor ~9 Wh — under a kilometre of e-bike range. Assistance removes a barrier that, uniquely in the Netherlands, actually exists here. |

@@ -19,39 +19,48 @@ const borderLoss = 1 - catchmentRatio(20, 0);
 const NEXT: { href: Route; label: string; blurb: string }[] = [
   {
     href: "/constraints",
-    label: "The constraint taxonomy",
-    blurb: "Which of Enschede's limits are fields, which are boundaries, and what each responds to.",
+    label: "The seven limits",
+    blurb: "Which limits are lines on a map, which are measurements, and what can be done about each.",
   },
   {
     href: "/nitrogen",
     label: "Nitrogen",
-    blurb: "A threshold of zero, and where a dwelling's nitrogen actually comes from.",
+    blurb: "Why the allowance is zero, and where a home's nitrogen really comes from.",
   },
   {
     href: "/mobility",
     label: "Mobility",
-    blurb: "Passenger-kilometres per kilowatt-hour, and what the ridge costs a rider.",
+    blurb: "How much energy each way of getting around uses, and what the hill costs a cyclist.",
   },
   {
     href: "/access",
     label: "Access",
-    blurb:
-      "Why the station buffer radius is a policy variable, and why land is the wrong denominator.",
+    blurb: "Why how far people will travel to a station matters more than how many stations there are.",
   },
   {
     href: "/border",
     label: "The border",
-    blurb: "A catchment cut by a chord, and the return on institutional work.",
+    blurb: "How much of the city's market the German border removes, and what opening it is worth.",
   },
   {
     href: "/energy",
     label: "Energy",
-    blurb: "Land per terawatt-hour, and why the search process selects the land-hungry option.",
+    blurb: "How much land wind and solar need, and why the process keeps picking the hungrier one.",
+  },
+  {
+    href: "/cape-town",
+    label: "Cape Town",
+    blurb: "The other city in this project, and why it has the opposite problem.",
+  },
+  {
+    href: "/compare",
+    label: "Both cities",
+    blurb: "Cape Town and Enschede next to each other, and the three things they share.",
   },
   {
     href: "/methods",
-    label: "Method and provenance",
-    blurb: "Where every figure comes from and what would change it.",
+    label: "Sources",
+    blurb: "Where every number comes from, and what this analysis gets wrong.",
   },
 ];
 
@@ -63,16 +72,16 @@ export default function Page() {
           Enschede · {CITY.region}
         </p>
         <h1 className="mb-6 text-[2.25rem] font-semibold leading-[1.15] tracking-tight text-ink sm:text-[2.75rem]">
-          The binding constraints are fields, not boundaries
+          What actually stops Enschede building
         </h1>
         <Lede>
-          Enschede is normally described through its edges: a settlement boundary, a nature
-          network, a national frontier four kilometres from the centre. Those edges are real
-          and they are not what stops the city building. What stops it is a set of continuous
-          quantities with thresholds — deposited nitrogen, sound level, fatality probability,
-          groundwater travel time — that a map can only show as a contour. The distinction
-          decides what can be done about them: a boundary can be moved or fought, and a field
-          can be lowered.
+          Enschede has plenty of land and still cannot build much on it. People usually blame
+          the lines on the planning map — the settlement boundary, the nature areas, the
+          German border four kilometres away. Those lines are real, but they are not the
+          problem. The problem is a set of measurements: nitrogen in the air, noise at the
+          window, risk near a pipeline, how long water takes to reach a well. That difference
+          matters, because you can argue about a line but you can actually bring a
+          measurement down — and bringing it down helps everywhere at once.
         </Lede>
       </header>
 
@@ -103,7 +112,7 @@ export default function Page() {
 
       <Figure
         n="01"
-        title="What a constraint looks like when you plot it against distance"
+        title="What each limit looks like as you move away from its source"
         deck="Intensity as a multiple of each constraint's own threshold, against distance from its source. The pale curve is the same constraint after a thirty per cent reduction at source. Schematic: these are characteristic forms, not calibrated site models, and nothing downstream reads a value from them."
         klass="derived"
         sources={["aerius", "provOverijssel"]}
@@ -133,16 +142,16 @@ export default function Page() {
 
       <section className="mb-16 mt-20">
         <h2 className="mb-6 border-t border-rule pt-3 text-[1.25rem] font-semibold tracking-tight text-ink">
-          Why Enschede
+          Why this city
         </h2>
         <Prose>
           <p>
-            A constraint analysis is only interesting where the constraints bind, and Enschede
-            binds in an unusual combination. It has {sig(CITY.landArea.value, 3)} km² of
-            municipal land and roughly {(CITY.population.value / 1000).toFixed(0)} thousand
-            people, which is not a land shortage. It also has a raised bog on its own edge, a
-            national frontier inside its commuting radius, its drinking water directly beneath
-            its built-up area, and thirty metres of relief in a country that has almost none.
+            Enschede has {sig(CITY.landArea.value, 3)} km² of land and about{" "}
+            {(CITY.population.value / 1000).toFixed(0)} thousand people. That is not a land
+            shortage. But it also has a protected bog on its own edge, the German border
+            inside commuting distance, its drinking water directly under the built-up area,
+            and thirty metres of hill in a country that has almost none. Each of those turns
+            into a limit, and only one of them is a line on a map.
           </p>
         </Prose>
         <dl className="mt-8 grid gap-x-10 gap-y-8 sm:grid-cols-2">

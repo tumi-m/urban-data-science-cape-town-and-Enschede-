@@ -39,13 +39,12 @@ const saturation = CURVE_RADII.find((r) => coverage(r).land >= 0.999);
 export default function Page() {
   return (
     <div>
-      <PageHeader index="04 · Access" title="The buffer radius is a policy variable">
-        The standard measure of transit access is the share of an administrative area lying
-        within a fixed walking buffer of a station. It is easy to compute, which is most of
-        why it is used, and it smuggles in two assumptions. The first is that the radius is a
-        property of the situation rather than of the mode chosen to reach the station. The
-        second is that land is the right thing to count. Both are wrong, and correcting them
-        changes what the number is evidence for.
+      <PageHeader index="04 · Access" title="How many people can reach a station">
+        The usual measure is the share of an area within an 800 metre walk of a station. It is
+        easy to work out, which is most of why it gets used, and it hides two assumptions.
+        First, that 800 metres is a fact about the place rather than a choice about how people
+        get there. Second, that land is the right thing to count. Both are wrong, and fixing
+        them changes what the number tells you.
       </PageHeader>
 
       <section className="mb-4 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
@@ -75,7 +74,7 @@ export default function Page() {
         />
       </section>
 
-      <Section title="Why r² does the work">
+      <Section title="Why the radius matters so much">
         <Prose>
           <p>
             An access shed is a disc, and the area of a disc goes as the square of its radius.
@@ -98,7 +97,7 @@ export default function Page() {
 
       <Figure
         n="01"
-        title="Sheds over Enschede's built-up area"
+        title="How much of Enschede each station reaches"
         deck="Three stations, one adjustable access radius. The grey wash is the density gradient; the blue is the union of the sheds, composited once so overlaps do not read as darker. Adjust the radius, or take the network's indirectness out of it."
         klass="derived"
         sources={["ns", "cbs", "clark"]}
@@ -107,7 +106,7 @@ export default function Page() {
         <AccessSheds />
       </Figure>
 
-      <Section title="Circuity, or why a buffer flatters itself">
+      <Section title="Why a circle on a map overstates it">
         <Prose>
           <p>
             A circle drawn around a station assumes streets run straight at it. They do not.
@@ -144,7 +143,7 @@ export default function Page() {
 
       <Figure
         n="02"
-        title="Land is the wrong denominator"
+        title="Counting land instead of people"
         deck="Coverage against access radius, counted as a share of residents and as a share of built-up land. Vertical rules mark the three access modes."
         klass="derived"
         sources={["clark", "cbs", "ns"]}
@@ -154,7 +153,7 @@ export default function Page() {
         <CoverageCurve />
       </Figure>
 
-      <Section title="What Enschede's three stations actually reach">
+      <Section title="What three stations actually reach">
         <Prose>
           <p>
             Measured the conventional way, Enschede's rail access is poor:{" "}
@@ -197,7 +196,7 @@ export default function Page() {
         </div>
       </Section>
 
-      <Section title="The same arithmetic at metropolitan scale">
+      <Section title="The same sum for Cape Town">
         <Prose>
           <p>
             The published figure for Cape Town is that {CAPE_TOWN.bufferKm2.value} km² of
@@ -224,7 +223,7 @@ export default function Page() {
 
       <Figure
         n="03"
-        title="Cape Town's station set at three access radii"
+        title="Cape Town's stations, if people cycled instead of walked"
         deck="Summed sheds for the published station set against the area of the development edge, logarithmic. Labels give the multiple of the edge."
         klass="derived"
         sources={["ctAccess"]}
@@ -234,7 +233,7 @@ export default function Page() {
         <CapeTownSheds />
       </Figure>
 
-      <Section title="Where this reading has to stop">
+      <Section title="What this does not tell you">
         <Prose>
           <p>
             Three limits, stated so they are not discovered as a rebuttal. Summed sheds are

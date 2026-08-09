@@ -139,6 +139,28 @@ const SOURCE_ENTRIES = {
     takes:
       "Density falling exponentially with distance from the centre, used to weight access coverage by people rather than by hectares.",
   },
+  cctMsdf: {
+    key: "cctMsdf",
+    title: "Municipal Spatial Development Framework and Spatial Trends Report",
+    holder: "City of Cape Town",
+    url: "https://resource.capetown.gov.za/",
+    takes: "The urban edge, its history since 1996, and land inside it.",
+  },
+  cctBionet: {
+    key: "cctBionet",
+    title: "Bioregional Plan and Biodiversity Spatial Plan",
+    holder: "City of Cape Town",
+    url: "https://resource.capetown.gov.za/",
+    takes:
+      "Protected areas, critical biodiversity areas, ecological support areas, and the share of natural vegetation already transformed.",
+  },
+  capeFlats: {
+    key: "capeFlats",
+    title: "Cape Flats geotechnical and aquifer studies",
+    holder: "Published research on the Cape Flats sands and aquifer",
+    takes:
+      "Depth range of liquefiable sands, aquifer depth and yield, and pollution vulnerability.",
+  },
   physics: {
     key: "physics",
     title: "Standard mechanics and powertrain efficiency ranges",

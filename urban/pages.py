@@ -51,13 +51,13 @@ def page_population() -> None:
     frame, series = _population()
     header(
         "08 · Population",
-        "A city that stopped growing, then started again",
-        "Enschede's population curve is not one process but three: rapid growth on textiles to "
-        "the early 1960s, a plateau of roughly thirty years through the industry's collapse and "
-        "the city's reinvention around its university, and slow renewed growth since the 1990s "
-        "carried by students and by international migration. Any model of the series has to "
-        "reproduce all three, and most models fitted to it reproduce whichever one dominates "
-        "the training window.",
+        "How Enschede's population changed",
+        "Enschede's population did three different things, not one. It grew fast on the textile "
+        "industry until the early 1960s. Then it sat flat for about thirty years while that "
+        "industry collapsed and the city rebuilt itself around its university. Since the 1990s "
+        "it has grown slowly again, mostly from students and people moving from abroad. Any "
+        "model of this has to handle all three, and most of them just copy whichever one they "
+        "were shown most of.",
     )
     data_badge(series)
 
@@ -74,7 +74,7 @@ def page_population() -> None:
     ])
 
     st.divider()
-    figure("01", "Municipal population, 1950 onward",
+    figure("01", "Population since 1950",
            "The three regimes are visible without any statistics: a steep climb, a flat stretch, "
            "and a shallower climb that has not yet recovered the first one's slope.")
     st.altair_chart(
@@ -84,7 +84,7 @@ def page_population() -> None:
     provenance(series.klass, series.source)
 
     st.divider()
-    figure("02", "Indexed against other places",
+    figure("02", "Compared with other places",
            "Population indexed to 100 at the start of the series. Indexing is the only fair way "
            "to put a city of 160,000 beside one of 900,000: the question is about rates, and an "
            "absolute axis answers a question about sizes instead.")
@@ -97,7 +97,7 @@ def page_population() -> None:
     data_badge(dem.COMPARATOR_SERIES)
 
     st.divider()
-    figure("03", "Where the change actually comes from",
+    figure("03", "What drives the change: births, and people moving",
            "Components of annual change, stacked around zero. The net is the distance between "
            "the top and the bottom of the stack, not the height of either.")
     flows = dem.components_of_change(frame["year"].to_numpy())
@@ -119,7 +119,7 @@ def page_population() -> None:
     )
 
     st.divider()
-    figure("04", "Two densities, and why the difference matters",
+    figure("04", "Two ways of measuring density",
            "Gross density divides by the whole municipality — mostly farmland and protected "
            "habitat, and always will be. Built-up density divides by the area that is actually "
            "urban.")
@@ -153,12 +153,12 @@ def page_projection() -> None:
     frame, series = _population()
     header(
         "09 · Projection",
-        "The model decides the answer, not the data",
-        "Seventy-five annual observations of a slow, smooth series cannot distinguish between a "
-        "city heading for 175,000 and one heading for 158,000. The functional form does that, "
-        "and the functional form is an assumption. So this section does not present a forecast. "
-        "It presents a control panel, and invites you to watch 2050 move by twenty thousand "
-        "people while the data underneath stays exactly the same.",
+        "Predicting the population in 2050",
+        "Seventy-five years of a slow, smooth series cannot tell you whether Enschede is heading "
+        "for 175,000 people or 158,000. The choice of model decides that, and the choice of "
+        "model is a guess. So this is not a forecast. It is a control panel: change the model "
+        "and watch the 2050 number move by twenty thousand people while the data stays exactly "
+        "the same.",
     )
     data_badge(series)
 
@@ -232,13 +232,13 @@ def page_projection() -> None:
     )
     c1, c2 = st.columns(2)
     with c1:
-        figure("02", "Predicted against actual, held-out years",
+        figure("02", "Predicted versus what actually happened",
                "The dashed diagonal is perfection. Distance from it is the error; a run of "
                "points on one side of it is bias.")
         st.altair_chart(owid.scatter_actual_predicted(fit.backtest),
                         width="stretch", key="fc_scatter")
     with c2:
-        figure("03", "Residuals over the whole series",
+        figure("03", "How far off the model was, year by year",
                "Observed minus fitted, in-sample. Structure here means the model has missed "
                "something systematic rather than merely being noisy.")
         st.altair_chart(owid.residual_plot(fit.residuals), width="stretch", key="fc_resid")
@@ -249,7 +249,7 @@ def page_projection() -> None:
         hide_index=True, width="stretch")
 
     st.divider()
-    st.subheader("Every model at once")
+    st.subheader("All the models side by side")
     note(
         "This is the section's actual argument. Each row is a different family at its defaults, "
         "on identical data. The spread across the projection column is far wider than any single "
@@ -288,7 +288,7 @@ def page_projection() -> None:
         )
 
     st.divider()
-    st.subheader("What would make this a real forecast")
+    st.subheader("What a real forecast would need")
     note(
         "A cohort-component model, which is what a statistics office actually runs: age the "
         "population forward one year at a time under fertility, mortality and migration "
@@ -307,13 +307,12 @@ def page_projection() -> None:
 def page_development() -> None:
     header(
         "10 · Development",
-        "Learning where a city grows, and what it does to values",
-        "Two models here. A classifier that predicts which cells develop, from accessibility "
-        "and existing density, filtered by the constraint mask the rest of this platform is "
-        "about. And a hedonic surface that prices the result. Both are built on synthetic "
-        "labels, and the section says so at every step, because a development probability map "
-        "is the single most persuasive-looking output in this entire project and persuasiveness "
-        "is exactly what it has not earned.",
+        "Predicting where building happens",
+        "Two models. One predicts which areas get built on, using how reachable they are, how "
+        "dense they already are, and which land is off-limits. The other estimates what land is "
+        "worth. Both run on made-up data, and this page keeps saying so, because a map of where "
+        "building will happen is the most convincing-looking thing in this whole project and it "
+        "has not earned that.",
     )
     data_badge(SYNTHETIC_GRID)
 
@@ -359,7 +358,7 @@ def page_development() -> None:
     st.divider()
     c1, c2 = st.columns([3, 2])
     with c1:
-        figure("01", "Probability of development",
+        figure("01", "How likely each area is to be built on",
                "Model output per cell. Protected land and everything beyond the border are held "
                "at zero by the constraint mask, not by the model.")
         st.altair_chart(
@@ -373,7 +372,7 @@ def page_development() -> None:
             "to be read against, not as a development register."
         )
     with c2:
-        figure("02", "What the model leans on",
+        figure("02", "What the model uses to decide",
                "Feature weights. For the linear model these are log-odds coefficients and read "
                "directly; for the ensembles they are impurity-based importances, which say what "
                "is used and not in which direction.")
@@ -389,7 +388,7 @@ def page_development() -> None:
             width="stretch")
 
     st.divider()
-    st.subheader("Known development sites")
+    st.subheader("Places in Enschede worth knowing")
     st.dataframe(sp.KNOWN_SITES[["name", "kind", "note"]], hide_index=True, width="stretch")
     note(
         "One of these is worth pausing on. Most Dutch cities of this size moved acute hospital "
@@ -402,7 +401,7 @@ def page_development() -> None:
     )
 
     st.divider()
-    figure("03", "Value surface",
+    figure("03", "What land is worth, by location",
            "Price per square metre implied by distance to the centre, distance to a station, "
            "local density and adjacency to open space.")
     grid_valued = model.grid.copy()
@@ -428,7 +427,7 @@ def page_development() -> None:
     provenance(SYNTHETIC, "Stated coefficients over the synthetic grid")
 
     st.divider()
-    st.subheader("The uncomfortable part of a development-probability map")
+    st.subheader("The problem with this kind of map")
     note(
         "A map like the one above is used in practice to justify where to invest, and it has a "
         "property worth naming: it is trained on where development *has* gone, so it predicts "
@@ -449,14 +448,14 @@ def page_simulation() -> None:
     frame, series = _population()
     header(
         "11 · Simulation",
-        "Running the city forward under a rule you can see",
-        "A constrained cellular automaton in the tradition of SLEUTH and the land-use core of "
-        "UrbanSim: each year's population increment is split between densifying built cells and "
-        "converting unbuilt ones, allocation follows the development probability from the "
-        "previous section, and the constraint mask decides what is off the table. It is not a "
-        "novel AI method, and describing it as one would be the easiest way to make it sound "
-        "more predictive than it is. Its value is comparative — the difference between two runs "
-        "is meaningful even where neither run is a forecast.",
+        "Simulating growth to 2050",
+        "Each year, the extra people are split between filling in areas already built on and "
+        "building on new land. Where the new building goes follows the map from the previous "
+        "section, and protected land is off the table. This is an old and well-known method "
+        "(it is called a cellular automaton; SLEUTH and UrbanSim are the standard examples), "
+        "not new AI, and saying otherwise would just make it sound more predictive than it is. "
+        "What it is good for is comparison: the difference between two runs means something "
+        "even when neither run is a forecast.",
     )
     data_badge(SYNTHETIC_GRID)
 
@@ -506,7 +505,7 @@ def page_simulation() -> None:
     ])
 
     st.divider()
-    figure("01", "Built-up area and density under the run",
+    figure("01", "Built-up area and density over the run",
            "Two outcomes of the same simulation. They move in opposite directions whenever "
            "growth is absorbed by conversion rather than by densification.")
     c1, c2 = st.columns(2)
@@ -524,7 +523,7 @@ def page_simulation() -> None:
     values_table(with_constraints.yearly.round(2))
 
     st.divider()
-    figure("02", "Where the growth lands",
+    figure("02", "Where the growth ends up",
            "Cells converted over the run, and the density added to cells that were already "
            "built. The constraint mask is doing visible work on the south-eastern edge.")
     c3, c4 = st.columns(2)
@@ -541,7 +540,7 @@ def page_simulation() -> None:
             width="content", key="sim_added")
 
     st.divider()
-    figure("03", "Value uplift implied by the added density",
+    figure("03", "How much land values go up",
            "Change in price per square metre from the density term alone. Accessibility is held "
            "fixed, because geography does not move unless somebody builds a station.")
     st.altair_chart(
@@ -562,7 +561,7 @@ def page_simulation() -> None:
     provenance(SYNTHETIC, "Simulation over the synthetic grid and value surface")
 
     st.divider()
-    st.subheader("Two runs, one difference")
+    st.subheader("The only number here worth trusting")
     delta = sp.scenario_delta(with_constraints, without)
     st.altair_chart(
         owid.single_line(delta, "year", "built_up_km2_delta",
@@ -578,7 +577,7 @@ def page_simulation() -> None:
     )
 
     st.divider()
-    st.subheader("What this is and is not")
+    st.subheader("What this can and cannot tell you")
     note(
         "**Is:** a transparent transition rule, run forward, whose every parameter is on screen "
         "and adjustable. Useful for asking what happens to land take if densification runs at 40 "
