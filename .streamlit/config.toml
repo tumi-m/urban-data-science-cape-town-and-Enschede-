@@ -1,0 +1,20 @@
+# The app commits to a single light look rather than shipping a half-working
+# dark mode. Charts paint their own background explicitly as well, so the
+# figures stay internally consistent even if a viewer overrides the theme from
+# the settings menu.
+#
+# Colours are the same tokens the Next.js application uses: the surface, the
+# ink, and the first slot of a validated eight-slot categorical order.
+
+[theme]
+base = "light"
+primaryColor = "#2a78d6"
+backgroundColor = "#fcfcfb"
+secondaryBackgroundColor = "#f4f3f0"
+textColor = "#0b0b0b"
+
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false
