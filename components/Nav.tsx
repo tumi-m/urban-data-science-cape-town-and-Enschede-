@@ -10,9 +10,10 @@ const SECTIONS: { href: Route; label: string; index: string }[] = [
   { href: "/constraints", label: "Constraints", index: "01" },
   { href: "/nitrogen", label: "Nitrogen", index: "02" },
   { href: "/mobility", label: "Mobility", index: "03" },
-  { href: "/border", label: "Border", index: "04" },
-  { href: "/energy", label: "Energy", index: "05" },
-  { href: "/methods", label: "Method", index: "06" },
+  { href: "/access", label: "Access", index: "04" },
+  { href: "/border", label: "Border", index: "05" },
+  { href: "/energy", label: "Energy", index: "06" },
+  { href: "/methods", label: "Method", index: "07" },
 ];
 
 export function Nav() {

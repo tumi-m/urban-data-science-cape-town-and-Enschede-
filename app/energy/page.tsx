@@ -23,7 +23,7 @@ const rooftop = rooftopPotentialTWh();
 export default function Page() {
   return (
     <div>
-      <PageHeader index="05 · Energy" title="Land per terawatt-hour">
+      <PageHeader index="06 · Energy" title="Land per terawatt-hour">
         The regional renewable target is argued about almost entirely in the language of
         landscape and consent. Converted into the two quantities that actually constrain it —
         area associated, and area withdrawn from other use — it produces an uncomfortable

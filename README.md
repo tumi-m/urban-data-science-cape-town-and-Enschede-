@@ -21,6 +21,7 @@ reduced, and reducing it relaxes every location at once.
 | **Constraints** | Five of Enschede's seven principal limits are fields with a source, a decay and a lever. Two are genuine polygons — and those two dominate public argument about growth. |
 | **Nitrogen** | Since the 2019 annulment of the programmatic approach there is no de minimis increase: the test is whether a project rounds to zero. Over a fifty-year life, ~92% of a dwelling's nitrogen oxides come from the traffic it attracts, not the plant that builds it. Location and parking norms *are* emissions instruments. |
 | **Mobility** | The energy ladder spans a factor of ~46 from petrol car to electric bicycle in passenger-kilometres per kilowatt-hour. Enschede sits on an ice-pushed ridge, so a 30 m climb costs a rider ~31 Wh of food energy and a motor ~9 Wh — under a kilometre of e-bike range. Assistance removes a barrier that, uniquely in the Netherlands, actually exists here. |
+| **Access** | The station buffer radius is a policy variable, not a property of the rail network, and shed area goes as r²: the same station has 14× the catchment at a cycling radius. Enschede's three stations reach 8% of built-up land on foot and 82% of *residents* by bicycle, with nothing built. Land is also the wrong denominator — counted in people rather than hectares, coverage runs a fifth higher at the walking radius. |
 | **Border** | The national border removes ~37% of a 20 km catchment and ~42% of a 30 km one, by geometry alone. The loss grows with radius, so it takes away regional functions while local ones look healthy. Permeability — an institutional quantity — moves more accessible population than anything that could be built. |
 | **Energy** | Per unit of energy, ground-mounted solar withdraws ~84× the land onshore wind does. Wind is blocked by fields (noise, flicker, radar, habitat); solar is blocked by a polygon. A search-area process therefore converges on the land-hungry option because its obstacle is the negotiable kind. |
 
@@ -52,7 +53,7 @@ study.
 | Framework | Next.js (App Router), React 19 | Pages are server-rendered; only the interactive figures ship as client components |
 | Styling | Tailwind CSS v4 | Utility-first, used to enforce a tight typographic scale and a high data-ink ratio rather than to decorate |
 | Declarative charts | Vega-Lite via `vega-embed` | Anything with a standard form — dot plots, bars, dumbbells, lines |
-| Bespoke figures | D3 (`d3-scale`, `d3-shape`, `d3-selection`, `d3-array`) | The three figures that are geometry rather than charts: constraint shapes, the cut catchment disc, the ridge transect |
+| Bespoke figures | D3 (`d3-scale`, `d3-shape`, `d3-selection`, `d3-array`) | The four figures that are geometry rather than charts: constraint shapes, the cut catchment disc, the ridge transect, the station access sheds |
 | Types | TypeScript, strict | Every quantity is a typed value with a unit, a class and a source |
 
 ### Chart rules the codebase enforces
@@ -92,7 +93,7 @@ npm run typecheck            # tsc --noEmit
 app/                    routes — one per analytical section, plus /methods
 components/
   charts/               Vega-Lite chart components (client)
-  d3/                   bespoke figures: ConstraintShapes, CatchmentGeometry, RidgeProfile
+  d3/                   bespoke figures: ConstraintShapes, CatchmentGeometry, RidgeProfile, AccessSheds
   VegaChart.tsx         embed wrapper — re-renders on colour-scheme change
   Figure.tsx            figure frame, stat tile, prose measure
 data/                   typed analytical modules; every figure is a value + unit + class + source

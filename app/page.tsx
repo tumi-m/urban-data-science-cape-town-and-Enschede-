@@ -33,6 +33,12 @@ const NEXT: { href: Route; label: string; blurb: string }[] = [
     blurb: "Passenger-kilometres per kilowatt-hour, and what the ridge costs a rider.",
   },
   {
+    href: "/access",
+    label: "Access",
+    blurb:
+      "Why the station buffer radius is a policy variable, and why land is the wrong denominator.",
+  },
+  {
     href: "/border",
     label: "The border",
     blurb: "A catchment cut by a chord, and the return on institutional work.",

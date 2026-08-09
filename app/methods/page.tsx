@@ -30,6 +30,10 @@ const LIMITS: { title: string; body: string }[] = [
     body: "The real frontier is not straight, the population beyond it is not uniform, and permeability is not a scalar — retail crosses far more easily than employment, which crosses more easily than healthcare. All three simplifications understate the finding rather than manufacture it.",
   },
   {
+    title: "Access sheds are summed, and the city is a disc",
+    body: "The access section stylises the built-up area as a disc of equal area and models density as an exponential gradient solved to the real population — accurate in aggregate, wrong at the neighbourhood scale. The metropolitan comparison sums station sheds rather than unioning them, so those figures are an upper bound. And a shed is not a service: geometric access says nothing about whether trains run.",
+  },
+  {
     title: "Occupancy dominates the energy ladder",
     body: "Collective modes are only as efficient as they are filled, and the all-day averages used here are lower than the peak-hour figures usually quoted. A bus at capacity beats a battery car comfortably; a bus at four passengers does not. The ladder uses observed averages because that is what a network actually delivers.",
   },
@@ -65,7 +69,7 @@ const PIPELINE: { stage: string; detail: string }[] = [
 export default function Page() {
   return (
     <div>
-      <PageHeader index="06 · Method" title="Where every figure comes from">
+      <PageHeader index="07 · Method" title="Where every figure comes from">
         An analytical claim is only as strong as the weakest number feeding it, so the class of
         each figure travels with the figure rather than sitting in a footnote at the end. The
         four classes below are deliberately coarse. A finer taxonomy would invite the author to

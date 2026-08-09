@@ -118,6 +118,27 @@ const SOURCE_ENTRIES = {
     takes:
       "The 2019 annulment of the programmatic approach and the 2022 annulment of the construction-phase exemption.",
   },
+  ns: {
+    key: "ns",
+    title: "Network and station data for the Dutch rail system",
+    holder: "ProRail and NS",
+    url: "https://www.rijdendetreinen.nl/open-data",
+    takes: "Station locations and the lines serving them.",
+  },
+  ctAccess: {
+    key: "ctAccess",
+    title: "Station-buffer coverage of the Cape Town urban development edge",
+    holder: "Third-party analysis, restated as published",
+    takes:
+      "183 km² of 800 m station buffers against an 895 km² development edge, giving 20 per cent. Quoted here as given and not independently reproduced.",
+  },
+  clark: {
+    key: "clark",
+    title: "Negative-exponential urban density gradient",
+    holder: "Standard urban-economics form",
+    takes:
+      "Density falling exponentially with distance from the centre, used to weight access coverage by people rather than by hectares.",
+  },
   physics: {
     key: "physics",
     title: "Standard mechanics and powertrain efficiency ranges",

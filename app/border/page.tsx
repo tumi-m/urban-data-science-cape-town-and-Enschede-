@@ -21,7 +21,7 @@ const gain = accessiblePopulation(30, integrated.value) - accessiblePopulation(3
 export default function Page() {
   return (
     <div>
-      <PageHeader index="04 · Border" title="A catchment cut by a chord">
+      <PageHeader index="05 · Border" title="A catchment cut by a chord">
         Every piece of fixed infrastructure in a city — a rail terminus, a hospital, a
         university, a heat network — recovers its cost from the population inside some travel
         radius, and that population is normally proportional to the area of a disc. Enschede's
