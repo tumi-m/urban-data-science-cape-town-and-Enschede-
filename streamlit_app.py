@@ -28,77 +28,23 @@ import pandas as pd
 import streamlit as st
 
 # =====================================================================
-# Presentation tokens
+# Presentation
 # =====================================================================
 #
-# The app commits to a single light look rather than shipping a half-working
-# dark mode. Streamlit's theme is set in .streamlit/config.toml, and every chart
-# paints its own background explicitly, so the figures stay internally
-# consistent even if a viewer forces the dark theme from the settings menu.
-#
-# The three categorical slots are the first three of a validated eight-slot
-# order — the three that clear the colour-vision separation floor on the
-# all-pairs test, which is the pairlist that applies to scatter plots.
+# Tokens and the shared Altair configuration live in urban/theme.py so the
+# charting helpers can use them without importing this module, and so there is
+# one definition of each colour rather than two that drift.
 
-SURFACE = "#fcfcfb"
-SURFACE_2 = "#f4f3f0"
-INK = "#0b0b0b"
-INK_2 = "#52514e"
-INK_3 = "#78766f"
-RULE = "#e2e0da"
-GRID = "#eceae4"
-
-SERIES = ["#2a78d6", "#eb6834", "#1baf7a"]
-
-# Both rastered geometry figures are square. They are rendered at a fixed
-# pixel size rather than stretched to the container: an ellipse would be a
-# lie in a figure whose entire content is geometry.
-SHED_PX = 400
-
-FONT = "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
-
-
-def style(chart: alt.Chart) -> alt.Chart:
-    """Subtract the chrome once, so no chart restates it.
-
-    Everything switched off here is ink that is not data: domain lines, tick
-    marks, view frames and legend boxes. What survives is a hairline grid on the
-    measured axis, because a reader estimating a value off a log scale needs
-    something and estimating from nothing is worse than a faint line.
-    """
-    return (
-        chart.configure_view(stroke=None)
-        .configure_axis(
-            labelFont=FONT,
-            labelFontSize=11,
-            labelColor=INK_3,
-            titleFont=FONT,
-            titleFontSize=11,
-            titleColor=INK_3,
-            titleFontWeight="normal",
-            domain=False,
-            ticks=False,
-            grid=False,
-            labelPadding=6,
-            titlePadding=10,
-        )
-        .configure_axisY(grid=True, gridColor=GRID, gridWidth=1)
-        .configure_legend(
-            orient="top",
-            title=None,
-            labelFont=FONT,
-            labelFontSize=11,
-            labelColor=INK_2,
-            symbolType="square",
-            symbolSize=64,
-            symbolStrokeWidth=0,
-            padding=0,
-            columnPadding=14,
-        )
-        .configure_header(labelFont=FONT, labelFontSize=11, labelColor=INK, titleColor=INK_3)
-        .configure_title(anchor="start", font=FONT, fontSize=12, color=INK_2)
-        .properties(background=SURFACE)
-    )
+from urban.theme import (  # noqa: E402
+    DIVERGING, FONT, GRID, INK, INK_2, INK_3, RULE, SEQUENTIAL, SERIES,
+    SHED_PX, SURFACE, SURFACE_2, style,
+)
+from urban.ui import (  # noqa: E402
+    figure, header, note, provenance, stats, values_table,
+)
+from urban.pages import (  # noqa: E402
+    page_development, page_population, page_projection, page_simulation,
+)
 
 
 # =====================================================================
@@ -562,54 +508,14 @@ CT_STATION_EQUIVALENTS = CT_BUFFER_KM2 / shed_area_km2(0.8)
 
 
 # =====================================================================
-# Layout helpers
+# Element identity
 # =====================================================================
-
-def header(index: str, title: str, lede: str) -> None:
-    st.caption(index.upper())
-    st.title(title)
-    st.markdown(f"<p style='font-size:1.05rem;line-height:1.65;max-width:62ch'>{lede}</p>",
-                unsafe_allow_html=True)
-    st.write("")
-
-
-def stats(items: list[tuple[str, str, str]]) -> None:
-    """A row of stat tiles. Used instead of a one-bar bar chart, never beside one."""
-    cols = st.columns(len(items))
-    for col, (label, value, note) in zip(cols, items):
-        with col:
-            st.metric(label, value)
-            st.caption(note)
-
-
-def figure(n: str, title: str, deck: str) -> None:
-    st.markdown(f"**{n} — {title}**")
-    st.caption(deck)
-
-
-def provenance(klass: str, sources: str) -> None:
-    st.caption(f"{klass.upper()} · {sources}")
-
-
-def note(text: str) -> None:
-    st.markdown(
-        f"<p style='font-size:0.85rem;line-height:1.6;color:{INK_2};max-width:68ch'>{text}</p>",
-        unsafe_allow_html=True,
-    )
-
-
-# Every st.altair_chart call below carries an explicit `key`. Streamlit
-# reconciles elements by their position in the tree, so a chart sitting at the
-# same position on two different sections gets handed the previous section's
+#
+# Every st.altair_chart call carries an explicit `key`. Streamlit reconciles
+# elements by their position in the tree, so a chart sitting at the same
+# position on two different sections gets handed the previous section's
 # rendered spec until it re-renders — which shows the reader the wrong figure
 # under the right caption. A stable key gives each figure its own identity.
-
-
-def values_table(df: pd.DataFrame) -> None:
-    """The accessible reading of any chart, and the required relief wherever a
-    series colour sits below three to one against the surface."""
-    with st.expander("Values"):
-        st.dataframe(df, hide_index=True, use_container_width=True)
 
 
 # =====================================================================
@@ -1862,6 +1768,10 @@ PAGES = {
     "05 · Border": page_border,
     "06 · Energy": page_energy,
     "07 · Method": page_method,
+    "08 · Population": page_population,
+    "09 · Projection": page_projection,
+    "10 · Development": page_development,
+    "11 · Simulation": page_simulation,
 }
 
 

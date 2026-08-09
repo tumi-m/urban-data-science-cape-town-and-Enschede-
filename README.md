@@ -24,6 +24,10 @@ reduced, and reducing it relaxes every location at once.
 | **Access** | The station buffer radius is a policy variable, not a property of the rail network, and shed area goes as r²: the same station has 14× the catchment at a cycling radius. Enschede's three stations reach 8% of built-up land on foot and 82% of *residents* by bicycle, with nothing built. Land is also the wrong denominator — counted in people rather than hectares, coverage runs a fifth higher at the walking radius. |
 | **Border** | The national border removes ~37% of a 20 km catchment and ~42% of a 30 km one, by geometry alone. The loss grows with radius, so it takes away regional functions while local ones look healthy. Permeability — an institutional quantity — moves more accessible population than anything that could be built. |
 | **Energy** | Per unit of energy, ground-mounted solar withdraws ~84× the land onshore wind does. Wind is blocked by fields (noise, flicker, radar, habitat); solar is blocked by a polygon. A search-area process therefore converges on the land-hungry option because its obstacle is the negotiable kind. |
+| **Population** | The curve is three regimes, not one: textile-era growth, a thirty-year plateau, then slow renewed growth. Natural increase went to roughly zero decades ago and domestic migration is persistently negative — what holds the total up is international migration alone. Gross and built-up density diverge, which is what sprawl looks like in a chart. |
+| **Projection** | Seven model families on identical data disagree about 2050 by ~24,600 people, about 15% of the city. The two with the *best* backtest scores are the two that cannot extrapolate at all. The section's finding is that the functional form decides the answer, and the functional form is an assumption. |
+| **Development** | A classifier over accessibility, density and the constraint mask, plus a hedonic value surface. Trained on synthetic labels — so a good score measures whether the learner recovers assumptions put there on purpose, which the page states in red rather than in a footnote. |
+| **Simulation** | A constrained cellular automaton (SLEUTH / UrbanSim lineage) allocating projected growth year by year. Only one output is defended: the *difference* between two runs that differ in one assumption, where the synthetic inputs cancel. |
 
 ## Provenance discipline
 
@@ -35,6 +39,26 @@ travels with the figure rather than sitting in a footnote:
 - `engineering` — a standard physics or engineering parameter, quoted with its range
 - `estimate` — an order-of-magnitude figure held in place until the authoritative layer
   is wired in
+
+The modelling layer adds two more, because its failure mode is different in kind. A
+chart of an estimate is roughly right; a *model* fitted to a weak series produces a
+forecast, an R², a confidence band and a map that all look exactly like the output of a
+model fitted to real data. The apparatus manufactures credibility whether or not the
+inputs deserve it, so the inputs announce themselves at every point of use:
+
+- `reconstructed` — a real series written down from knowledge rather than pulled from
+  the source. Right in shape and magnitude, wrong in the third digit
+- `synthetic` — generated here by a stated process. **Not data about Enschede.** Present
+  so the machinery can be built and tested end to end
+
+`worst_class()` enforces the rule that a result inherits the class of its weakest input —
+combining an official series with a synthetic one does not yield something half-official.
+Synthetic inputs surface as a red banner in the UI, never as a grey caption.
+
+**On data availability.** `urban/demography.py` contains a real StatLine fetch path. Where
+the host has outbound access it uses the live series and labels it `official`; where it
+does not, it falls back to the reconstructed series and says so on every chart drawn from
+it. Which one is in play is always visible.
 
 Where a conclusion rests on an `estimate`, it is written to survive that figure's
 replacement, or it is not drawn. Sources are listed in full at `/methods`, together with
@@ -55,6 +79,8 @@ study.
 | Declarative charts | Vega-Lite via `vega-embed` | Anything with a standard form — dot plots, bars, dumbbells, lines |
 | Bespoke figures | D3 (`d3-scale`, `d3-shape`, `d3-selection`, `d3-array`) | The four figures that are geometry rather than charts: constraint shapes, the cut catchment disc, the ridge transect, the station access sheds |
 | Types | TypeScript, strict | Every quantity is a typed value with a unit, a class and a source |
+| ML / stats | scikit-learn, SciPy | Model registry, backtesting, development classifier, growth-curve fitting |
+| Streamlit app | Streamlit + Altair | Python port of the platform, plus the interactive modelling sections |
 
 ### Chart rules the codebase enforces
 
@@ -100,7 +126,31 @@ data/                   typed analytical modules; every figure is a value + unit
 lib/
   provenance.ts         the Quantity/Source types and the source registry
   vegaTheme.ts          shared chart configuration, read from live CSS custom properties
+
+streamlit_app.py        Streamlit entry point — constraint sections, ported to Altair
+urban/                  the modelling layer
+  provenance.py         the two extra classes, and the weakest-input rule
+  demography.py         population, density, flows; live fetch with a labelled fallback
+  forecast.py           model registry, tail backtesting, projection to 2050
+  spatial.py            development classifier, hedonic surface, growth simulation
+  owid.py               chart forms in the Our World in Data idiom
+  theme.py / ui.py      tokens and layout primitives shared with the app
 ```
+
+## Two deployments, one analysis
+
+The Next.js platform is the essay. The Streamlit app is the instrument: the same
+constraint sections ported to Altair, plus four modelling sections that need
+widgets, model selection and compute.
+
+```bash
+streamlit run streamlit_app.py     # or point Streamlit Cloud at this file
+```
+
+The port duplicates the analytical constants in Python — Streamlit Cloud cannot read the
+TypeScript modules — and that duplication is a real cost. Everything that could drift lives
+in one marked `CONSTANTS` block at the top of `streamlit_app.py`, in the same order as the
+`data/*.ts` modules it mirrors.
 
 The data modules are the analysis. `app/` renders them and adds argument; it does not
 compute anything the modules do not expose.
