@@ -109,6 +109,60 @@ CSS = f"""
   /* ---------- callouts: keep the red loud, soften the rest ---------- */
   [data-testid="stAlert"] {{ border-radius: 6px; font-size: 0.85rem; }}
 
+  /* ---------- figure headings ----------
+     Three sizes doing three jobs. Before this, the number, the title, the
+     description, the source line and the axis labels were all the same small
+     grey text, so nothing told a reader which was which. */
+  .fig-head {{ margin: 0.2rem 0 0.55rem 0; }}
+  .fig-num {{
+      font-size: 0.66rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: {SERIES[0]};
+      font-weight: 600;
+      margin-bottom: 0.2rem;
+  }}
+  .fig-title {{
+      font-size: 1.06rem;
+      font-weight: 600;
+      color: {INK};
+      line-height: 1.3;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.28rem;
+  }}
+  .fig-deck {{
+      font-size: 0.86rem;
+      line-height: 1.55;
+      color: {INK_2};
+      max-width: 78ch;
+  }}
+  .fig-read {{
+      border-left: 2px solid {SERIES[1]};
+      padding: 0.15rem 0 0.15rem 0.85rem;
+      margin: 0.9rem 0 0.3rem 0;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: {INK};
+      max-width: 78ch;
+  }}
+  .fig-read span {{
+      display: block;
+      font-size: 0.64rem;
+      text-transform: uppercase;
+      letter-spacing: 0.11em;
+      color: {INK_3};
+      margin-bottom: 0.2rem;
+      font-weight: 600;
+  }}
+  .fig-source {{
+      font-size: 0.7rem;
+      color: {INK_3};
+      margin-top: 0.5rem;
+      padding-top: 0.4rem;
+      border-top: 1px solid {GRID};
+      max-width: 78ch;
+  }}
+
   /* ---------- hero ---------- */
   .hero {{
       border-top: 2px solid {INK};

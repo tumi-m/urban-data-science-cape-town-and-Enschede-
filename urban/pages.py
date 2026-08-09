@@ -75,8 +75,10 @@ def page_population() -> None:
 
     st.divider()
     figure("01", "Population since 1950",
-           "The three regimes are visible without any statistics: a steep climb, a flat stretch, "
-           "and a shallower climb that has not yet recovered the first one's slope.")
+           "Number of people living in Enschede, each year.",
+           "Three different things happened, and you can see all of them without any "
+           "statistics: a steep climb, a flat stretch of about thirty years, and a shallower "
+           "climb that never got back to the first slope.")
     st.altair_chart(
         owid.single_line(frame, "year", "population",
                          x_title="", y_title="inhabitants", height=320),
@@ -85,9 +87,11 @@ def page_population() -> None:
 
     st.divider()
     figure("02", "Compared with other places",
-           "Population indexed to 100 at the start of the series. Indexing is the only fair way "
-           "to put a city of 160,000 beside one of 900,000: the question is about rates, and an "
-           "absolute axis answers a question about sizes instead.")
+           "Every line starts at 100 in the first year, so they show growth rates rather than "
+           "sizes.",
+           "Enschede is the blue line. Setting everything to 100 at the start is the only fair "
+           "way to compare a city of 160,000 with one of 900,000 — otherwise you are comparing "
+           "how big they are, which was not the question.")
     comp = dem.comparators(frame["year"].to_numpy())
     st.altair_chart(
         owid.line_with_end_labels(comp, "year", "index", "entity",
@@ -98,8 +102,11 @@ def page_population() -> None:
 
     st.divider()
     figure("03", "What drives the change: births, and people moving",
-           "Components of annual change, stacked around zero. The net is the distance between "
-           "the top and the bottom of the stack, not the height of either.")
+           "Three things that add or remove people each year. Bars above zero add, bars below "
+           "take away.",
+           "The overall change is the distance from the bottom of the stack to the top — not "
+           "the height of any one bar. Watch the blue shrink: births minus deaths used to add "
+           "2,000 people a year and now adds almost none.")
     flows = dem.components_of_change(frame["year"].to_numpy())
     long = flows.melt(id_vars="year", var_name="component", value_name="people")
     st.altair_chart(
@@ -120,9 +127,11 @@ def page_population() -> None:
 
     st.divider()
     figure("04", "Two ways of measuring density",
-           "Gross density divides by the whole municipality — mostly farmland and protected "
-           "habitat, and always will be. Built-up density divides by the area that is actually "
-           "urban.")
+           "People per km². The orange line divides by the whole municipality; the blue divides "
+           "only by the part that is actually built on.",
+           "When the two lines pull apart, the city is spreading out faster than it is growing. "
+           "That is sprawl, and the whole-municipality figure cannot show it — it can sit "
+           "perfectly flat while the built-up part empties out.")
     density = dem.density_series(frame, land_area_km2=LAND_AREA_KM2)
     tidy = pd.concat([
         density[["year", "gross_density"]].rename(columns={"gross_density": "value"})
@@ -205,8 +214,10 @@ def page_projection() -> None:
 
     st.divider()
     figure("01", f"History and projection to {horizon}",
-           "History solid, projection dashed. The dash is not decoration: one line is a "
-           "measurement and the other is an assumption with arithmetic attached.")
+           "Solid line is what happened. Dashed line is what the model you picked expects.",
+           "The dash is not decoration. The solid part is measured; the dashed part is a guess "
+           "with arithmetic attached. Change the model in the sidebar and watch only the dashed "
+           "part move.")
     st.altair_chart(
         owid.projection(frame, fit.forecast, x_title="", y_title="inhabitants", height=340),
         width="stretch", key="fc_projection")
@@ -233,14 +244,17 @@ def page_projection() -> None:
     c1, c2 = st.columns(2)
     with c1:
         figure("02", "Predicted versus what actually happened",
-               "The dashed diagonal is perfection. Distance from it is the error; a run of "
-               "points on one side of it is bias.")
+               "Each dot is one withheld year.",
+               "The dashed diagonal is a perfect prediction. How far a dot sits from it is the "
+               "error. Several dots on the same side means the model is not just noisy, it is "
+               "consistently wrong in one direction.")
         st.altair_chart(owid.scatter_actual_predicted(fit.backtest),
                         width="stretch", key="fc_scatter")
     with c2:
         figure("03", "How far off the model was, year by year",
-               "Observed minus fitted, in-sample. Structure here means the model has missed "
-               "something systematic rather than merely being noisy.")
+               "What actually happened, minus what the model said.",
+               "You want this to look like random noise around zero. A pattern — a run of bars "
+               "on one side, or a wave — means the model has missed something real.")
         st.altair_chart(owid.residual_plot(fit.residuals), width="stretch", key="fc_resid")
 
     st.dataframe(
@@ -359,8 +373,10 @@ def page_development() -> None:
     c1, c2 = st.columns([3, 2])
     with c1:
         figure("01", "How likely each area is to be built on",
-               "Model output per cell. Protected land and everything beyond the border are held "
-               "at zero by the constraint mask, not by the model.")
+               "Darker blue means the model thinks building is more likely there.",
+               "The bite out of the bottom right is protected land, and the straight edge on "
+               "the right is the German border. Those are set to zero by the rules, not by the "
+               "model — the model never even sees them as an option.")
         st.altair_chart(
             owid.raster(model.grid, "p_develop", legend_title="p(develop)",
                         points=sp.KNOWN_SITES, point_labels=True),
@@ -373,9 +389,10 @@ def page_development() -> None:
         )
     with c2:
         figure("02", "What the model uses to decide",
-               "Feature weights. For the linear model these are log-odds coefficients and read "
-               "directly; for the ensembles they are impurity-based importances, which say what "
-               "is used and not in which direction.")
+               "How much each input matters.",
+               "For the logistic model these are directional — negative means it pushes "
+               "building away. For the two tree models they only show how much an input gets "
+               "used, not which way it pushes.")
         st.altair_chart(
             owid.horizontal_bars(model.importance, "feature", "weight",
                                  x_title="weight", height=170, value_format=".3f",
@@ -402,8 +419,10 @@ def page_development() -> None:
 
     st.divider()
     figure("03", "What land is worth, by location",
-           "Price per square metre implied by distance to the centre, distance to a station, "
-           "local density and adjacency to open space.")
+           "Estimated price per square metre.",
+           "Four things drive it: how far to the centre, how far to a station, how dense the "
+           "area already is, and whether open space is next door. This is a made-up surface "
+           "showing the shape of the relationship, not Enschede prices.")
     grid_valued = model.grid.copy()
     grid_valued["value_eur_m2"] = sp.value_surface(grid_valued)
     c3, c4 = st.columns([3, 2])
@@ -506,8 +525,9 @@ def page_simulation() -> None:
 
     st.divider()
     figure("01", "Built-up area and density over the run",
-           "Two outcomes of the same simulation. They move in opposite directions whenever "
-           "growth is absorbed by conversion rather than by densification.")
+           "Left: how much land is built on. Right: how many people per km² of it.",
+           "These two move in opposite directions whenever growth spreads outward instead of "
+           "filling in. Drag the densification slider in the sidebar and watch them trade off.")
     c1, c2 = st.columns(2)
     with c1:
         st.altair_chart(
@@ -524,8 +544,9 @@ def page_simulation() -> None:
 
     st.divider()
     figure("02", "Where the growth ends up",
-           "Cells converted over the run, and the density added to cells that were already "
-           "built. The constraint mask is doing visible work on the south-eastern edge.")
+           "Left: land newly built on. Right: extra people added where building already was.",
+           "The gap on the south-eastern edge is protected land the simulation is not allowed "
+           "to touch. That gap is the constraint doing its job, made visible.")
     c3, c4 = st.columns(2)
     with c3:
         st.altair_chart(
@@ -541,8 +562,10 @@ def page_simulation() -> None:
 
     st.divider()
     figure("03", "How much land values go up",
-           "Change in price per square metre from the density term alone. Accessibility is held "
-           "fixed, because geography does not move unless somebody builds a station.")
+           "Change in price per square metre after the simulated building.",
+           "Only density changes here — distance to the centre and to a station stay put, "
+           "because geography does not move unless someone builds a new station. So this is the "
+           "value created purely by permission to build more.")
     st.altair_chart(
         owid.raster(with_constraints.final_grid, "value_uplift", scheme="diverging",
                     legend_title="Δ €/m²", points=sp.KNOWN_SITES),

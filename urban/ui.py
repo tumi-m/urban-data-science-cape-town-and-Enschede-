@@ -34,13 +34,50 @@ def stats(items: list[tuple[str, str, str]]) -> None:
             st.caption(note_text)
 
 
-def figure(n: str, title: str, deck: str) -> None:
-    st.markdown(f"**{n} — {title}**")
-    st.caption(deck)
+def figure(n: str, title: str, deck: str, reads_as: str | None = None) -> None:
+    """A chart heading a reader can use.
+
+    Three lines, each doing one job, in the order a reader needs them:
+
+        CHART 3          where you are
+        The title        what is plotted
+        How to read it   what to do with it
+
+    The old version ran the title and a long description together in small grey
+    text, which meant the description was the same weight as the caption, the
+    source line and the axis labels — four kinds of text at one size, none of
+    them signalling what it was for. Whatever is left in `deck` should be short.
+    `reads_as` is the sentence that tells you what you are looking at.
+    """
+    st.markdown(
+        f"<div class='fig-head'>"
+        f"<div class='fig-num'>Chart {n.lstrip('0') or n}</div>"
+        f"<div class='fig-title'>{title}</div>"
+        f"<div class='fig-deck'>{deck}</div>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+    if reads_as:
+        st.markdown(
+            f"<div class='fig-read'><span>How to read it</span>{reads_as}</div>",
+            unsafe_allow_html=True,
+        )
 
 
 def provenance(klass: str, sources: str) -> None:
-    st.caption(f"{klass.upper()} · {sources}")
+    """Source line under a figure, in words rather than in shorthand."""
+    words = {
+        "official": "Published figures",
+        "derived": "Worked out here",
+        "engineering": "Standard engineering values",
+        "estimate": "Estimate",
+        "reconstructed": "Reconstructed series",
+        "synthetic": "Made-up data",
+    }
+    st.markdown(
+        f"<div class='fig-source'>{words.get(klass, klass)} · {sources}</div>",
+        unsafe_allow_html=True,
+    )
 
 
 def note(text: str) -> None:

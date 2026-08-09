@@ -574,15 +574,54 @@ def page_start() -> None:
 
     st.divider()
     figure("01", "What each limit looks like as you move away from its source",
-           "Each limit is shown as a multiple of its own threshold — the dark line at 1.0 — against "
-           "distance from whatever causes it. The dashed line is the same limit after cutting "
-           "the cause by thirty per cent. These are shapes, not site measurements.")
+           "Five limits, each as a multiple of its own threshold. The dark horizontal line is "
+           "that threshold. Blue is now; dashed orange is after cutting the cause by thirty "
+           "per cent.",
+           "Look at the gap between the two lines in each panel. A gap means the limit can be "
+           "brought down. The last panel has no gap — a line on a map has nothing underneath "
+           "it to reduce.")
     st.altair_chart(chart_constraint_shapes(), use_container_width=True, key="shapes_thesis")
     note("Four of the five respond to a reduction at source. The fifth has no source term at "
          "all — it is a line on a map, and the only thing that can be done with a line is to "
          "argue about where it goes. Planning practice spends most of its attention on the fifth "
          "kind.")
     provenance("derived", "RIVM, Provincie Overijssel")
+
+    st.divider()
+    st.subheader("What is in the machine-learning part")
+    note(
+        "Part 4 in the sidebar. Three kinds of model, each with its controls and its scores on "
+        "screen so you can break them yourself."
+    )
+    m1, m2, m3 = st.columns(3, gap="large")
+    with m1:
+        st.markdown("**4.2 · Forecasting 2050**")
+        st.caption(
+            "Seven models — linear, polynomial ridge, random forest, gradient boosting, "
+            "Gaussian process and two growth curves. Pick one, tune it, and see how badly it "
+            "would have done on years withheld from it. They disagree about 2050 by about "
+            "24,000 people, and the two with the best scores cannot extrapolate at all."
+        )
+    with m2:
+        st.markdown("**4.3 · Where building goes**")
+        st.caption(
+            "A classifier over how reachable each area is, how dense it already is, and what "
+            "land is off-limits. Logistic regression, random forest or gradient boosting, with "
+            "accuracy, ROC AUC, calibration and a confusion matrix. Plus a model of what land "
+            "is worth."
+        )
+    with m3:
+        st.markdown("**4.4 · Simulating growth**")
+        st.caption(
+            "The forecast and the classifier run forward year by year to 2050, splitting each "
+            "year's extra people between filling in and building out. Adjust the split and "
+            "watch land take and density trade off."
+        )
+    st.caption(
+        "⚠︎ The spatial models run on made-up data, because the real registers are not "
+        "reachable from here — every page that uses it says so in red. Sections 4.1 and 4.2 use "
+        "a reconstructed population series: right in shape, wrong in the third digit."
+    )
 
     st.divider()
     st.subheader("What follows")
@@ -607,15 +646,16 @@ def page_start() -> None:
 
 def page_constraints() -> None:
     header("01 · Constraints", "The seven things limiting building",
-           "A geographic information system stores what its formats can hold, and the dominant "
-           "format holds polygons. So constraints arrive as polygons, and the habit of thought "
-           "that follows is that a constraint is a place. Most of the limits that actually bind in "
-           "Enschede are not places. They are quantities defined everywhere, drawn as polygons "
-           "only because someone traced the contour where the quantity crosses a number.")
+           "Planning software stores shapes. So limits get stored as shapes, and everyone "
+           "starts thinking a limit is a place. Most of the things actually stopping "
+           "building in Enschede are not places. They are measurements — nitrogen, noise, "
+           "risk, travel time — that exist everywhere and only look like a shape because "
+           "someone drew a line where the number crosses a threshold.")
 
-    figure("01", "Fields decay; boundaries step",
-           "The same constraint before and after a thirty per cent reduction at source. Where the "
-           "two curves coincide, there is nothing to reduce.")
+    figure("01", "Measurements fade with distance; lines do not",
+           "The same five limits, before and after cutting their cause by thirty per cent.",
+           "Where the two lines separate, the limit can be reduced. In the last panel they "
+           "sit on top of each other.")
     st.altair_chart(chart_constraint_shapes(), use_container_width=True, key="shapes_constraints")
     provenance("derived", "RIVM, Provincie Overijssel")
 
@@ -653,28 +693,30 @@ def page_nitrogen() -> None:
     best_case = lifetime_nox_kg(0.2, True)
 
     header("02 · Nitrogen", "Nitrogen: why the allowance is zero",
-           "Since the programmatic approach was annulled in 2019, a project affecting a habitat "
-           "already above its critical deposition value has no allowance to draw on. Not a small "
-           "allowance — none. The consequence is that Enschede's development capacity is not "
-           "rationed by hectares but by a quantity measured in mol per hectare per year, and that "
-           "quantity is dominated by a term nobody thinks of as environmental policy: how much "
-           "driving each new dwelling causes.")
+           "Since a 2019 court ruling, a project that adds nitrogen to a nature area already "
+           "over its limit gets no allowance at all. Not a small one — none. So what limits "
+           "building in Enschede is not hectares of land, it is a chemical measurement. And "
+           "most of that measurement comes from something nobody files under environmental "
+           "policy: how much driving each new home causes.")
 
     stats([
-        ("Raised-bog critical value", f"{bog['kdw']:,}",
-         "mol N/ha/yr — the lowest in the national set, at a habitat on the municipality's own edge."),
-        ("Regional background load", f"{BACKGROUND_DEPOSITION:,}",
-         "mol N/ha/yr. The habitat is over its limit before any project is proposed."),
-        ("Headroom for a new project", "0.00",
-         "mol N/ha/yr. What the model reports to two decimals is what functions as the limit."),
-        ("Construction's share of lifetime NOx", f"{construction_share * 100:.0f}%",
-         "The remainder is the traffic the dwelling attracts over fifty years."),
+        ("What a raised bog can take", f"{bog['kdw']:,}",
+         "Units of nitrogen per hectare per year — the lowest limit in the country, at a bog on Enschede's own edge."),
+        ("What the region actually delivers", f"{BACKGROUND_DEPOSITION:,}",
+         "Same units. The bog is four times over its limit before anyone proposes anything."),
+        ("Allowance for a new project", "0.00",
+         "None at all. A project has to round to zero on the official calculator to be allowed."),
+        ("Share that comes from building it", f"{construction_share * 100:.0f}%",
+         "All the rest is the driving the home causes over the next fifty years."),
     ])
 
     st.divider()
-    figure("01", "Five of six habitats sit below the load",
-           "Critical deposition values by habitat against the regional background. Raised bog, "
-           "picked out, is under by a factor of four; only alluvial forest clears the rule.")
+    figure("01", "Five of six habitats get more nitrogen than they can take",
+           "Each bar is how much nitrogen a habitat can tolerate. The vertical line is how "
+           "much the region actually delivers.",
+           "Any bar shorter than the line is a habitat already over its limit. The orange "
+           "bar is raised bog — over by a factor of four, and it sits on Enschede's own "
+           "edge.")
     st.altair_chart(chart_critical_values(), use_container_width=True, key="critical_values")
     values_table(HABITATS.assign(**{
         "load ÷ critical value": (BACKGROUND_DEPOSITION / HABITATS["kdw"]).round(1)
@@ -695,9 +737,11 @@ def page_nitrogen() -> None:
          "the whole of the answer.")
 
     st.divider()
-    figure("02", "A dwelling's nitrogen is its traffic",
-           "Nitrogen oxides per dwelling over a fifty-year life, split between construction plant "
-           "and attracted traffic, under five combinations of location, parking and plant.")
+    figure("02", "Most of a home's nitrogen comes from driving, not building",
+           "Nitrogen from one home over fifty years. Orange is the machinery that builds it; "
+           "blue is the traffic it causes afterwards.",
+           "The blue is about twelve times the orange. Where you put the home, and how much "
+           "parking you give it, matters far more than how cleanly you build it.")
     st.altair_chart(chart_dwelling_nitrogen(), use_container_width=True, key="dwelling_nitrogen")
     values_table(dwelling_nitrogen_table())
     note("Emission side only: no dispersion is modelled here and none should be read into it. "
@@ -744,10 +788,10 @@ def page_mobility() -> None:
     battery = climb_work_wh(TYPICAL_CLIMB_M) / MOTOR_EFFICIENCY
 
     header("03 · Mobility", "How much energy each way of travelling uses",
-           "Traffic is conventionally counted in vehicles per hour, which measures the thing being "
-           "managed rather than the thing being consumed. Reduce every mode to the energy it "
-           "spends moving one person one kilometre and the modes stop being a menu of preferences "
-           "and become a ladder spanning a factor of fifty.")
+           "Traffic is normally counted in vehicles per hour. That measures what is being "
+           "managed, not what is being used up. Measure instead the energy each way of "
+           "travelling spends moving one person one kilometre, and the options stop being a "
+           "matter of taste: the best is about fifty times better than the worst.")
 
     stats([
         ("Electric bicycle", f"{m.loc['ebike', 'pkm_per_kwh']:.0f}",
@@ -761,9 +805,11 @@ def page_mobility() -> None:
     ])
 
     st.divider()
-    figure("01", "The ladder",
-           "Passenger-kilometres delivered per kilowatt-hour, on a logarithmic axis. Energy is "
-           "counted where it enters the vehicle; occupancy is the observed average.")
+    figure("01", "Energy used per person per kilometre",
+           "How far one kilowatt-hour moves one person. Longer is better. The scale is "
+           "logarithmic — each gridline is a multiple, not an addition.",
+           "The top of this list is about fifty times better than the bottom. Not a tuning "
+           "difference — a different order of magnitude, available today.")
     st.altair_chart(chart_energy_ladder(), use_container_width=True, key="energy_ladder")
     values_table(
         MODES.sort_values("pkm_per_kwh", ascending=False)[
@@ -791,8 +837,11 @@ def page_mobility() -> None:
          "add part of a metabolic term back. Both corrections narrow the gap; neither reverses it.")
 
     st.divider()
-    figure("02", "Energy and land are the same axis",
-           "Energy per passenger-kilometre against plan area per passenger, both logarithmic.")
+    figure("02", "The modes that waste energy also waste space",
+           "Energy used across the bottom, road space used up the side. Both scales "
+           "logarithmic.",
+           "The dots fall along a diagonal. Energy and space are not two problems to trade "
+           "off against each other — they are one problem measured twice.")
     st.altair_chart(chart_energy_versus_space(), use_container_width=True, key="energy_space")
     note("The modes fall along a diagonal. In a city with a settlement boundary on one side, a "
          "nature network on another and a national border on a third, the mode that wastes energy "
@@ -809,9 +858,10 @@ def page_mobility() -> None:
         f"for flat ground, this is the local variable that policy does not account for — and it is "
         f"the specific thing electrical assistance removes."
     )
-    figure("03", "A traverse of the built-up area, west to east",
-           "Elevation above datum along a coarse transect from the low ground west of the city, "
-           "over the ridge through the centre, and down toward the border.")
+    figure("03", "The hill across Enschede, west to east",
+           "Height above sea level along a line across the city.",
+           "About thirty metres of climb. Trivial in a car, and the reason a three-kilometre "
+           "cycle trip to the station turns into a car trip instead.")
     st.altair_chart(chart_ridge(), use_container_width=True, key="ridge")
 
     stats([
@@ -836,26 +886,26 @@ def page_access() -> None:
     bike_cov = coverage(effective_radius(bike))
 
     header("04 · Access", "How many people can reach a station",
-           "The standard measure of transit access is the share of an administrative area lying "
-           "within a fixed walking buffer of a station. It is easy to compute, which is most of "
-           "why it is used, and it smuggles in two assumptions. The first is that the radius is a "
-           "property of the situation rather than of the mode chosen to reach the station. The "
-           "second is that land is the right thing to count. Both are wrong.")
+           "The usual measure is the share of an area within an 800 metre walk of a station. "
+           "It is easy to work out, which is most of why it gets used, and it hides two "
+           "assumptions. First, that 800 metres is a fact about the place rather than a "
+           "choice about how people get there. Second, that land is the right thing to "
+           "count. Both are wrong.")
 
     stats([
-        ("Shed at the walking radius", f"{shed_area_km2(walk['radius_km']):.1f} km²",
-         "π r² at 800 m, the conventional planning buffer."),
-        ("Shed at the cycling radius", f"{shed_area_km2(bike['radius_km']):.1f} km²",
-         f"{shed_area_km2(bike['radius_km']) / shed_area_km2(walk['radius_km']):.0f}× the area, "
-         "because the shed goes as the square of the radius."),
-        ("Shed at the assisted radius", f"{shed_area_km2(ebike['radius_km']):.0f} km²",
-         f"{shed_area_km2(ebike['radius_km']) / shed_area_km2(walk['radius_km']):.0f}× the walking shed."),
-        ("Enschede stations", f"{len(STATIONS)}",
-         "Derisory walking coverage, and not the constraint it appears to be."),
+        ("Reach on foot", f"{shed_area_km2(walk['radius_km']):.1f} km²",
+         "Area one station covers at an 800 m walk — the usual planning assumption."),
+        ("Reach by bicycle", f"{shed_area_km2(bike['radius_km']):.1f} km²",
+         f"The same ten minutes on a bike covers {shed_area_km2(bike['radius_km']) / shed_area_km2(walk['radius_km']):.0f} times "
+         "the area, because area grows with the square of the distance."),
+        ("Reach by e-bike", f"{shed_area_km2(ebike['radius_km']):.0f} km²",
+         f"{shed_area_km2(ebike['radius_km']) / shed_area_km2(walk['radius_km']):.0f} times the walking figure, from twelve minutes of pedalling."),
+        ("Stations in Enschede", f"{len(STATIONS)}",
+         "Poor coverage on foot — and it turns out that is not the real problem."),
     ])
 
     st.divider()
-    st.subheader("Why r² does the work")
+    st.subheader("Why the distance assumption matters so much")
     st.markdown(
         "An access shed is a disc, and the area of a disc goes as the square of its radius. "
         "Tripling the reach does not triple the catchment, it multiplies it by nine. This is "
@@ -865,9 +915,12 @@ def page_access() -> None:
     )
 
     st.divider()
-    figure("01", "Sheds over Enschede's built-up area",
-           "Three stations, one adjustable access radius. Cell opacity is the density gradient; "
-           "blue cells are within reach of a station.")
+    figure("01", "How much of Enschede each station reaches",
+           "Grey shading is where people live — darker is denser. Blue is what is within "
+           "reach of a station at the radius you pick.",
+           "Switch between walking, bicycle and e-bike in the controls. The stations do not "
+           "move and no track is built; only the assumed radius changes, and the blue area "
+           "changes enormously.")
 
     c1, c2 = st.columns([1, 1])
     with c1:
@@ -928,9 +981,12 @@ def page_access() -> None:
     )
 
     st.divider()
-    figure("02", "Land is the wrong denominator",
-           "Coverage against access radius, counted as a share of residents and as a share of "
-           "built-up land. Vertical rules mark the three access modes.")
+    figure("02", "Counting land instead of people",
+           "The same coverage counted two ways: share of residents in orange, share of land "
+           "in blue, as the radius grows.",
+           "The orange line sits above the blue one. Counting land undercounts access, "
+           "because the central station stands where most people are and the hectares at the "
+           "edge are nearly empty.")
     st.altair_chart(chart_coverage_curve(), use_container_width=True, key="coverage_curve")
     values_table(coverage_table())
     note(f"The gap behaves in two ways worth separating. In proportional terms it is worst at the "
@@ -961,9 +1017,12 @@ def page_access() -> None:
     )
 
     st.divider()
-    figure("03", "Cape Town's station set at three access radii",
-           "Summed sheds for the published station set against the area of the development edge, "
-           "logarithmic. Labels give the multiple of the edge.")
+    figure("03", "Cape Town's stations, if people cycled instead of walked",
+           "Cape Town's existing stations under three assumptions about how far people will "
+           "travel to reach one. The orange line is the whole buildable area.",
+           "At walking distance the stations cover a fifth of the city. At cycling distance "
+           "the same stations cover nearly three times it. This is a sum not a union, so the "
+           "real figure is lower — but Cape Town is clearly not short of stations.")
     st.altair_chart(chart_cape_town(), use_container_width=True, key="cape_town")
     values_table(cape_town_table())
     note(f"The published figure is that {CT_BUFFER_KM2} km² of 800 m buffers cover "
@@ -999,28 +1058,30 @@ def page_access() -> None:
 
 def page_border() -> None:
     header("05 · Border", "The border cuts the city's market",
-           "Every piece of fixed infrastructure in a city — a rail terminus, a hospital, a "
-           "university, a heat network — recovers its cost from the population inside some travel "
-           "radius, and that population is normally proportional to the area of a disc. Enschede's "
-           "disc is cut four kilometres from its centre. The land beyond is not empty; it is "
-           "institutionally separate, which is a different problem with a different remedy.")
+           "A hospital, a university, a station or a heat network pays for itself out of the "
+           "people who live within travelling distance. That area is normally a circle. "
+           "Enschede's circle is cut four kilometres from the centre by the German border. "
+           "The land on the other side is not empty — Gronau is right there — but it is a "
+           "different country, which is a different problem with a different fix.")
 
     stats([
-        ("20 km disc beyond the border", f"{(1 - catchment_ratio(20, 0)) * 100:.0f}%",
-         "Pure geometry, independent of how open the frontier is."),
-        ("30 km disc beyond the border", f"{(1 - catchment_ratio(30, 0)) * 100:.0f}%",
-         "The loss grows with radius: a larger disc puts more of itself past a fixed chord."),
-        ("Effective catchment today, 30 km", f"{catchment_ratio(30, 0.15) * 100:.0f}%",
-         "Of what an interior city of the same size would have."),
-        ("Unlocked by integration alone",
+        ("Lost within 20 km", f"{(1 - catchment_ratio(20, 0)) * 100:.0f}%",
+         "Share of the circle that falls on the German side. Pure geometry."),
+        ("Lost within 30 km", f"{(1 - catchment_ratio(30, 0)) * 100:.0f}%",
+         "The further out you look, the more of the circle is on the wrong side of the line."),
+        ("What Enschede actually has", f"{catchment_ratio(30, 0.15) * 100:.0f}%",
+         "Of what a city the same size inland would have, at 30 km, at today's border openness."),
+        ("Gained by opening the border",
          f"{(accessible_population(30, 0.5) - accessible_population(30, 0.15)) / 1000:.0f}k",
-         "Moving to a working cross-border labour market at 30 km. No construction involved."),
+         "From a working cross-border labour market. Nothing has to be built."),
     ])
 
     st.divider()
-    figure("01", "The geometry, and the membrane over it",
-           "Shaded ground is the catchment the city can draw on. Ground east of the line counts "
-           "only to the extent that the border is permeable.")
+    figure("01", "How much of the city's market the border removes",
+           "The circle is everyone within travelling distance. The orange line is the German "
+           "border. Ground east of it fades out as the border gets harder to cross.",
+           "Drag the two sliders. The radius is geography and cannot change; the border's "
+           "openness is a policy choice and can. Watch which one moves the numbers more.")
 
     c1, c2 = st.columns([1, 1])
     with c1:
@@ -1067,8 +1128,12 @@ def page_border() -> None:
     )
 
     st.divider()
-    figure("02", "Catchment against radius, by permeability",
-           "Effective catchment as a percentage of the full disc an interior city would enjoy.")
+    figure("02", "How the loss grows with distance",
+           "How much of a normal city's catchment Enschede actually has, as the travel "
+           "radius grows.",
+           "All three lines fall as you go right. The border costs Enschede almost nothing "
+           "locally, and a great deal for anything needing a wide catchment — a hospital "
+           "department, a concert hall.")
     st.altair_chart(chart_catchment_curve(), use_container_width=True, key="catchment_curve")
     provenance("derived", "CBS")
 
@@ -1101,29 +1166,32 @@ def page_energy() -> None:
     rooftop = rooftop_potential_twh()
 
     header("06 · Energy", "How much land renewable energy needs",
-           "The regional renewable target is argued about almost entirely in the language of "
-           "landscape and consent. Converted into the two quantities that actually constrain it — "
-           "area associated, and area withdrawn from other use — it produces an uncomfortable "
-           "result. The technology that consumes the least land is the one the constraint regime "
-           "excludes, and the technology that survives the regime is the one that consumes the most.")
+           "The regional renewable target gets argued about in terms of landscape and "
+           "objections. Convert it instead into the two things that really limit it — how "
+           "much land is involved, and how much land is actually taken out of use — and an "
+           "awkward result appears. The option that uses the least land is the one the rules "
+           "block. The one that gets built uses the most.")
 
     stats([
-        ("Regional target", f"{RES_TARGET_TWH} TWh/yr",
-         "Across the fourteen Twente municipalities, not Enschede alone."),
-        ("Land withdrawn, wind", f"{wind_excl:.2f} km²",
-         f"{units_for_target(t.loc['wind']):.0f} machines. The array spans {wind_gross:.0f} km², "
-         "nearly all of which stays in agricultural use."),
-        ("Land withdrawn, solar", f"{solar_excl:.0f} km²",
-         f"Every hectare of it, withdrawn — {solar_excl / LAND_AREA_KM2 * 100:.0f} per cent of "
-         "Enschede's municipal land area, for scale rather than as a siting proposal."),
-        ("Ratio between them", f"{solar_excl / wind_excl:.0f}×",
-         "Per unit of energy delivered. The gap is not a detail of the comparison; it is the comparison."),
+        ("Regional target", f"{RES_TARGET_TWH} TWh a year",
+         "Across the fourteen Twente municipalities together, not Enschede alone."),
+        ("Land wind actually takes", f"{wind_excl:.2f} km²",
+         f"{units_for_target(t.loc['wind']):.0f} turbines, spread over {wind_gross:.0f} km² — but farming carries on "
+         "under almost all of it."),
+        ("Land solar actually takes", f"{solar_excl:.0f} km²",
+         f"All of it, permanently — about {solar_excl / LAND_AREA_KM2 * 100:.0f}% of Enschede's whole area, "
+         "quoted for scale rather than as a proposal."),
+        ("Solar versus wind", f"{solar_excl / wind_excl:.0f}× more land",
+         "For the same amount of energy. That gap is the whole comparison."),
     ])
 
     st.divider()
-    figure("01", "Associated land against land withdrawn",
-           f"Square kilometres needed for the {RES_TARGET_TWH} TWh per year target, logarithmic. "
-           "Each technology is a pair: land associated with, and land taken out of other use.")
+    figure("01", "Land used up, versus land merely nearby",
+           "Land needed for the regional renewable target. Blue is land the technology is "
+           "spread across; orange is land actually taken out of use. Logarithmic scale.",
+           "For wind the two dots are far apart — a wind farm covers a lot of ground and the "
+           "farming carries on underneath. For solar they sit on top of each other: a solar "
+           "field takes all of it.")
     st.altair_chart(chart_land_per_twh(), use_container_width=True, key="land_per_twh")
     values_table(land_table())
     note("Rooftop solar sits at zero on both measures, which a logarithmic axis cannot draw, so it "
@@ -1164,10 +1232,10 @@ def page_energy() -> None:
 
 def page_method() -> None:
     header("07 · Method", "Where the numbers come from",
-           "An analytical claim is only as strong as the weakest number feeding it, so the class of "
-           "each figure travels with the figure rather than sitting in a footnote at the end. The "
-           "four classes are deliberately coarse; a finer taxonomy would invite the author to hide "
-           "behind it.")
+           "An argument is only as good as its weakest number, so every figure carries a "
+           "label saying how solid it is, right next to the figure. There are only a few "
+           "labels on purpose — more categories would just give the author somewhere to "
+           "hide.")
 
     st.subheader("Classes")
     for name, body in [
@@ -1795,37 +1863,45 @@ def chart_land_per_twh() -> alt.Chart:
 # within it. Fourteen items in a single flat list is a wall, and it hides the
 # fact that the two cities are analysed to very different depths.
 
-SCOPES: dict[str, dict[str, object]] = {
-    "Overview — both cities": {
-        "What this is": lambda: page_start(),
-        "Side by side": lambda: page_compare(),
-        "Where the numbers come from": lambda: page_method(),
+# The report has a reading order, so the menu shows one. Sections are numbered
+# within each part, the parts run in the order you would read them, and the
+# machine-learning part says so in its name rather than hiding behind
+# "data and models".
+
+PARTS: dict[str, dict[str, object]] = {
+    "1 · Start here": {
+        "1.1 What this is about": lambda: page_start(),
+        "1.2 The two cities compared": lambda: page_compare(),
     },
-    "Enschede": {
-        "The seven limits": lambda: page_constraints(),
-        "Nitrogen": lambda: page_nitrogen(),
-        "Energy and travel": lambda: page_mobility(),
-        "Reaching a station": lambda: page_access(),
-        "The German border": lambda: page_border(),
-        "Land for energy": lambda: page_energy(),
+    "2 · Cape Town": {
+        "2.1 Running out of room": lambda: page_cape_town(),
     },
-    "Cape Town": {
-        "Running out of room": lambda: page_cape_town(),
-        "Side by side with Enschede": lambda: page_compare(),
+    "3 · Enschede": {
+        "3.1 The seven limits": lambda: page_constraints(),
+        "3.2 Nitrogen": lambda: page_nitrogen(),
+        "3.3 Energy and travel": lambda: page_mobility(),
+        "3.4 Reaching a station": lambda: page_access(),
+        "3.5 The German border": lambda: page_border(),
+        "3.6 Land for energy": lambda: page_energy(),
     },
-    "Data and models": {
-        "Population": lambda: page_population(),
-        "Predicting 2050": lambda: page_projection(),
-        "Where building happens": lambda: page_development(),
-        "Simulating growth": lambda: page_simulation(),
+    "4 · Machine learning": {
+        "4.1 Population history": lambda: page_population(),
+        "4.2 Forecasting 2050 — 7 models": lambda: page_projection(),
+        "4.3 Where building goes — 3 models": lambda: page_development(),
+        "4.4 Simulating growth to 2050": lambda: page_simulation(),
+    },
+    "5 · Sources": {
+        "5.1 Where the numbers come from": lambda: page_method(),
     },
 }
 
-SCOPE_BLURB = {
-    "Overview — both cities": "The argument in short, and the two cities against each other.",
-    "Enschede": "Plenty of land, and still cannot build. Six things in the way.",
-    "Cape Town": "Almost no land left, and the land that is left is the wrong land.",
-    "Data and models": "Population history, a forecast you can argue with, and two models.",
+PART_BLURB = {
+    "1 · Start here": "The argument in short, and the two cities against each other.",
+    "2 · Cape Town": "Almost no land left — and the land that is left is the wrong land.",
+    "3 · Enschede": "Plenty of land and still cannot build. Six things in the way.",
+    "4 · Machine learning": "Forecasting models, a development classifier and a growth "
+                          "simulation, each with its controls and its scores on screen.",
+    "5 · Sources": "Every number, where it came from, and what this gets wrong.",
 }
 
 
@@ -1844,18 +1920,21 @@ def main() -> None:
         st.caption("what limits building")
         st.write("")
 
-        scope = st.radio("Show me", list(SCOPES), key="scope")
-        st.caption(SCOPE_BLURB[scope])
-        st.divider()
+        part = st.radio("Part of the report", list(PARTS), key="part",
+                         label_visibility="visible")
+        st.caption(PART_BLURB[part])
+        st.write("")
 
-        sections = SCOPES[scope]
-        section = st.radio("Section", list(sections), key=f"section_{scope}")
+        sections = PARTS[part]
+        if len(sections) > 1:
+            section = st.radio("Section", list(sections), key=f"section_{part}")
+        else:
+            section = next(iter(sections))
 
         st.divider()
         st.caption(
-            "Every number says how solid it is — official, derived, engineering or estimate — "
-            "and where it came from. Where a number is only an estimate, the point it supports "
-            "is written so it still holds if the number changes."
+            "Every number says how solid it is — official, derived, engineering, estimate, "
+            "reconstructed or synthetic — and where it came from."
         )
 
     sections[section]()
