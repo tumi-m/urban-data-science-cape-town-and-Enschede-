@@ -593,3 +593,158 @@ def page_simulation() -> None:
         "that is the honest next step — but it needs the real register, the real valuation file "
         "and the real travel survey before it produces anything but a prettier version of this."
     )
+
+
+# =====================================================================
+# Cape Town
+# =====================================================================
+
+def page_cape_town() -> None:
+    from . import capetown as ct
+
+    header(
+        "Cape Town",
+        "Cape Town: running out of room",
+        "Cape Town has the opposite problem to Enschede. Enschede has land it cannot build "
+        "on. Cape Town has almost no land left at all. Mountain on one side, ocean on two, "
+        "and about a third of what remains is protected nature. What is left is a flat sandy "
+        "plain that is both the worst ground to build on and the roof of the city's emergency "
+        "water supply.",
+    )
+
+    stats([
+        ("Land you can build on", f"{ct.URBAN_EDGE_KM2 / ct.MUNICIPAL_KM2 * 100:.0f}%",
+         f"{ct.URBAN_EDGE_KM2} km² inside the urban edge, out of {ct.MUNICIPAL_KM2:,} km² of city."),
+        ("People per km² of it", f"{ct.PEOPLE_PER_BUILDABLE_KM2:,.0f}",
+         "Roughly five times Enschede's figure, on much harder ground."),
+        ("Protected nature", f"{ct.PROTECTED_SHARE}%",
+         f"{ct.PROTECTED_HA:,} hectares formally protected, before biodiversity areas count."),
+        ("Original plant life gone", f"{ct.VEGETATION_LOST_PCT}%",
+         "Mostly on the flat lowlands, which is where building is easiest."),
+    ])
+
+    st.divider()
+    figure("01", "Where Cape Town's land goes",
+           "The whole municipality, split three ways. The blue block is everything the city "
+           "is allowed to build on.")
+    st.altair_chart(owid.land_split_bar(ct.land_split(), ct.MUNICIPAL_KM2),
+                    width="stretch", key="ct_land")
+    values_table(ct.land_split()[["part", "km2", "detail"]])
+    note(
+        f"The municipal total is worked out from the city's own numbers rather than looked up: "
+        f"{ct.PROTECTED_HA:,} hectares is stated as {ct.PROTECTED_SHARE}% of the city, which "
+        f"makes the whole {ct.MUNICIPAL_KM2:,} km². That matches the published area, which is a "
+        f"useful sign the two figures agree."
+    )
+    provenance("derived", "City of Cape Town")
+
+    st.divider()
+    st.subheader("The four limits")
+    note("Two of these are lines on a map and two are measurements. That split matters, "
+         "because you can only argue about a line, whereas a measurement can be brought down.")
+    for _, row in ct.LIMITS.iterrows():
+        with st.expander(f"{row['limit']}  ·  {row['kind']}"):
+            st.markdown(f"**What it is** — {row['what']}")
+            st.markdown(f"**What it does** — {row['does']}")
+            st.markdown(f"**Can it be brought down?** — {row['fixable']}")
+
+    st.divider()
+    st.subheader("The trap")
+    st.markdown(
+        f"Put the four together and you get a loop the city cannot easily escape. The urban "
+        f"edge stops outward growth. Protected nature takes a third of the land. That leaves "
+        f"the Cape Flats — flat, available, cheap."
+    )
+    st.markdown(
+        f"But the Cape Flats is loose sand that can lose its strength in an earthquake between "
+        f"about {ct.LIQUEFIABLE_FROM_M} and {ct.LIQUEFIABLE_TO_M:.0f} metres down. That is "
+        f"exactly the depth foundations for tall buildings sit in, so building upward there "
+        f"costs far more than it should. So the city builds outward and low instead, on the "
+        f"cheapest land at the edge — furthest from the jobs."
+    )
+    st.markdown(
+        f"And underneath that same sand is the aquifer: about {ct.AQUIFER_YIELD_MM3} million "
+        f"cubic metres of water a year, which the city turned to when the dams nearly ran dry. "
+        f"The sand that makes the water reachable is the same sand that lets anything spilled "
+        f"on the surface reach it."
+    )
+    st.info(
+        "**So the limit pushes housing onto the one piece of land where building up is most "
+        "expensive and where building at all threatens the water.** Every part of that is a "
+        "reasonable decision on its own. Together they trap the city."
+    )
+
+    st.divider()
+    st.subheader("Trains")
+    st.markdown(
+        f"About {ct.STATION_SHARE * 100:.0f}% of the land inside the urban edge is within an "
+        f"800 metre walk of a station — {ct.STATION_BUFFERS_KM2} km² out of "
+        f"{ct.URBAN_EDGE_KM2} km². That is usually read as proof the city needs decades of new "
+        f"rail. Be careful with it. Cape Town already has a big rail network, and the access "
+        f"section works through why that 20% is mostly a statement about how far people are "
+        f"assumed to walk. And since the network was largely stripped by theft, coverage has "
+        f"been beside the point: a station you can walk to is worth nothing if no train comes."
+    )
+    st.caption(
+        "Figures on this page are the City of Cape Town's published numbers and research on "
+        "the Cape Flats, plus one third-party station calculation, repeated as given. Nothing "
+        "here is recomputed from source data — unlike the Enschede sections."
+    )
+
+
+def page_compare() -> None:
+    from . import capetown as ct
+
+    header(
+        "Both cities",
+        "Cape Town and Enschede, side by side",
+        "These two cities are in one project because they are hard to build in for opposite "
+        "reasons. Cape Town has run out of land. Enschede has plenty and still cannot build. "
+        "Comparing them shows something neither shows alone: what kind of limit you are "
+        "dealing with decides what you can do about it.",
+    )
+
+    stats([
+        ("Cape Town, people per built km²", f"{ct.PEOPLE_PER_BUILDABLE_KM2:,.0f}",
+         "On 895 km² inside the urban edge."),
+        ("Enschede, people per built km²", f"{161_000 / 43:,.0f}",
+         "On about 43 km² of built-up land."),
+        ("Cape Town's limit", "A line",
+         "You can argue about where it goes; you cannot make it smaller."),
+        ("Enschede's limit", "A number",
+         "Nitrogen per hectare per year. Bring it down and it helps everywhere at once."),
+    ])
+
+    st.divider()
+    st.subheader("The same questions, both cities")
+    for i, row in enumerate(ct.COMPARISON, 1):
+        st.markdown(f"**{i:02d} · {row['question']}**")
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown(f":orange[**Cape Town**]")
+            st.caption(row["ct"])
+        with c2:
+            st.markdown(f":blue[**Enschede**]")
+            st.caption(row["en"])
+        note(row["so"])
+        st.write("")
+
+    st.divider()
+    st.subheader("The numbers next to each other")
+    st.dataframe(ct.SIDE_BY_SIDE, hide_index=True, width="stretch")
+
+    st.divider()
+    st.subheader("What both cities have in common")
+    for title, body in ct.SHARED_LESSONS:
+        st.markdown(f"**{title}**")
+        note(body)
+
+    st.divider()
+    st.subheader("What is not equal here")
+    note(
+        "The Enschede sections do their own arithmetic and show it. The Cape Town figures are "
+        "taken from published city documents and one third-party calculation, and repeated as "
+        "given. So this is a fair comparison of what the two cities look like, and not yet a "
+        "fair comparison of two analyses. Redoing the Cape Town side from source data is the "
+        "obvious next step."
+    )

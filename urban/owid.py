@@ -348,3 +348,34 @@ def horizontal_bars(df: pd.DataFrame, label: str, value: str, *,
         y=alt.Y(f"{label}:N", sort=order, title=None),
         x=f"{value}:Q", text=alt.Text(f"{value}:Q", format=value_format))
     return style(alt.layer(bars, labels).properties(height=height))
+
+
+def land_split_bar(df: pd.DataFrame, total_km2: float) -> alt.Chart:
+    """One bar broken into parts, for a part-to-whole question.
+
+    A stacked single bar rather than a pie: the question is "how much of the
+    whole is left", the parts are ordered from most restricted to least, and a
+    reader can compare lengths far more accurately than angles.
+    """
+    order = df.sort_values("order")["part"].tolist()
+    # A constant band on y. A bar with only an x encoding has no vertical
+    # extent to draw into and renders as nothing at all.
+    plotted = df.assign(row="")
+    return style(
+        alt.Chart(plotted)
+        .mark_bar(stroke=SURFACE, strokeWidth=2, cornerRadiusEnd=4, height=46)
+        .encode(
+            y=alt.Y("row:N", title=None, axis=None),
+            x=alt.X("km2:Q", stack="zero",
+                    title=f"km² of Cape Town's {total_km2:,.0f} km²",
+                    axis=alt.Axis(format="~s", grid=True, gridColor=GRID,
+                                  values=[0, 500, 1000, 1500, 2000, 2500])),
+            color=alt.Color("part:N", sort=order,
+                            scale=alt.Scale(domain=order,
+                                            range=[SERIES[2], SERIES[0], INK_3]),
+                            legend=alt.Legend(orient="top")),
+            order=alt.Order("order:Q"),
+            tooltip=["part", alt.Tooltip("km2:Q", format=","), "detail"],
+        )
+        .properties(height=110)
+    )

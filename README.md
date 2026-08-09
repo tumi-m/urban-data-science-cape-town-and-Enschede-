@@ -143,13 +143,19 @@ urban/                  the modelling layer
 
 ## Two deployments, one analysis
 
-The Next.js platform is the essay. The Streamlit app is the instrument: the same
-constraint sections ported to Altair, plus four modelling sections that need
-widgets, model selection and compute.
+**The Streamlit app is the deployed one.** It carries the whole analysis — both
+cities, all the constraint sections, and the four modelling sections that need
+widgets and compute. The Next.js platform is the same argument as a static essay.
 
 ```bash
 streamlit run streamlit_app.py     # or point Streamlit Cloud at this file
 ```
+
+The sidebar has two controls rather than one long list. The first picks what you
+want to look at — **Overview (both cities)**, **Enschede**, **Cape Town**, or
+**Data and models** — and the second picks the section within it. Fourteen items in
+a flat list is a wall, and it hides the fact that the two cities are analysed to
+very different depths.
 
 The port duplicates the analytical constants in Python — Streamlit Cloud cannot read the
 TypeScript modules — and that duplication is a real cost. Everything that could drift lives

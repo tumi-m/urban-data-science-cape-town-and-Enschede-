@@ -43,8 +43,10 @@ from urban.ui import (  # noqa: E402
     figure, header, note, provenance, stats, values_table,
 )
 from urban.pages import (  # noqa: E402
-    page_development, page_population, page_projection, page_simulation,
+    page_cape_town, page_compare, page_development, page_population,
+    page_projection, page_simulation,
 )
+from urban import chrome  # noqa: E402
 
 
 # =====================================================================
@@ -522,42 +524,59 @@ CT_STATION_EQUIVALENTS = CT_BUFFER_KM2 / shed_area_km2(0.8)
 # Pages
 # =====================================================================
 
-def page_thesis() -> None:
+def page_start() -> None:
     bog = HABITATS.iloc[0]
     exceedance = BACKGROUND_DEPOSITION / bog["kdw"]
     best = MODES.loc[MODES["pkm_per_kwh"].idxmax()]
     worst = MODES.loc[MODES["pkm_per_kwh"].idxmin()]
 
-    header(
-        "Enschede · Twente, Overijssel",
-        "What actually stops Enschede building",
-        "Enschede is normally described through its edges: a settlement boundary, a nature "
-        "network, a national frontier four kilometres from the centre. Those edges are real and "
-        "they are not what stops the city building. What stops it is a set of continuous "
-        "quantities with thresholds — deposited nitrogen, sound level, fatality probability, "
-        "groundwater travel time — that a map can only show as a contour. The distinction decides "
-        "what can be done about them: a boundary can be moved or fought, and a field can be "
-        "lowered.",
+    chrome.hero(
+        "Cape Town · Enschede",
+        "What actually stops a city building",
+        "Two cities that are hard to build in for opposite reasons. Comparing them shows "
+        "something neither shows alone: some limits are lines on a map, others are "
+        "measurements — and you can only argue about a line, while a measurement can "
+        "actually be brought down.",
     )
 
+    c1, c2 = st.columns(2, gap="large")
+    with c1:
+        chrome.city_card(
+            "Cape Town", "Has run out of land.",
+            "Mountain on one side, ocean on two, about a third of what is left protected. "
+            "895 km² to build on, for 4.8 million people — and what remains is sand that is "
+            "expensive to build on, sitting over the city's emergency water supply.",
+            chrome.ACCENT_CT)
+    with c2:
+        chrome.city_card(
+            "Enschede", "Has land, and still cannot build.",
+            "140 km² for 161,000 people, only 43 km² of it built on. What stops it is not "
+            "land at all — it is nitrogen in the air, noise at the window, risk near a "
+            "pipeline, travel time to a well.",
+            chrome.ACCENT_EN)
+
+    st.write("")
+    st.divider()
+    st.subheader("Four numbers to start with")
     stats([
-        ("Load ÷ raised-bog tolerance", f"{exceedance:.1f}×",
-         f"{BACKGROUND_DEPOSITION:,} against a critical value of {bog['kdw']} mol N per hectare "
-         "per year, at a habitat inside the municipal boundary."),
-        ("Permitted increase once exceeded", "0.00",
-         "mol N/ha/yr. No de minimis allowance; the test is whether a project rounds to zero."),
-        ("Span of the energy ladder",
+        ("Nitrogen over the limit", f"{exceedance:.1f}×",
+         f"A protected bog on Enschede's edge gets {BACKGROUND_DEPOSITION:,} units of nitrogen "
+         f"against a limit of {bog['kdw']}."),
+        ("Allowance for a new project", "0.00",
+         "Once a habitat is over its limit there is no allowance at all. Not a small one — none."),
+        ("Best travel option vs worst",
          f"{best['pkm_per_kwh'] / worst['pkm_per_kwh']:.0f}×",
-         f"From {worst['label'].lower()} to {best['label'].lower()}, in passenger-kilometres per kilowatt-hour."),
-        ("20 km catchment lost to the border", f"{(1 - catchment_ratio(20, 0)) * 100:.0f}%",
-         "Pure geometry, before any question of whether the frontier is open."),
+         f"An {best['label'].lower()} moves a person on a fraction of the energy a "
+         f"{worst['label'].lower()} uses."),
+        ("Cape Town land you can build on", "37%",
+         "895 km² inside the urban edge, out of 2,451 km² of city."),
     ])
 
     st.divider()
-    figure("01", "What a constraint looks like when you plot it against distance",
-           "Intensity as a multiple of each constraint's own threshold, against distance from its "
-           "source. The pale curve is the same constraint after a thirty per cent reduction at "
-           "source. Schematic: characteristic forms, not calibrated site models.")
+    figure("01", "What each limit looks like as you move away from its source",
+           "Each limit is shown as a multiple of its own threshold — the dark line at 1.0 — against "
+           "distance from whatever causes it. The dashed line is the same limit after cutting "
+           "the cause by thirty per cent. These are shapes, not site measurements.")
     st.altair_chart(chart_constraint_shapes(), use_container_width=True, key="shapes_thesis")
     note("Four of the five respond to a reduction at source. The fifth has no source term at "
          "all — it is a line on a map, and the only thing that can be done with a line is to "
@@ -1243,10 +1262,14 @@ def chart_constraint_shapes() -> alt.Chart:
     d = np.linspace(0, 3, 121)
 
     def curves(name: str, base, reduced, unit: str):
+        # The unit belongs in the caption, not the panel title: a facet header
+        # strip is about 150px wide and truncates anything longer.
         rows = []
         for dist in d:
-            rows.append({"panel": f"{name} ({unit})", "d": dist, "v": base(dist), "series": "As it stands"})
-            rows.append({"panel": f"{name} ({unit})", "d": dist, "v": reduced(dist), "series": "After a 30% reduction at source"})
+            rows.append({"panel": name, "unit": unit, "d": dist, "v": base(dist),
+                         "series": "As it stands"})
+            rows.append({"panel": name, "unit": unit, "d": dist, "v": reduced(dist),
+                         "series": "After a 30% reduction at source"})
         return rows
 
     rows = []
@@ -1298,7 +1321,11 @@ def chart_constraint_shapes() -> alt.Chart:
     return style(
         alt.layer(threshold, lines, data=df)
         .properties(width=170, height=130)
-        .facet(facet=alt.Facet("panel:N", title=None, header=alt.Header(labelLimit=200)), columns=5)
+        .facet(facet=alt.Facet("panel:N", title=None,
+                               sort=["Nitrogen deposition", "Road noise", "External safety",
+                                     "Groundwater capture", "Designated area boundary"],
+                               header=alt.Header(labelLimit=200, labelFontSize=11)),
+               columns=5)
         .resolve_scale(y="independent")
     )
 
@@ -1759,19 +1786,46 @@ def chart_land_per_twh() -> alt.Chart:
 # Entry point
 # =====================================================================
 
-PAGES = {
-    "00 · Thesis": page_thesis,
-    "01 · Constraints": page_constraints,
-    "02 · Nitrogen": page_nitrogen,
-    "03 · Mobility": page_mobility,
-    "04 · Access": page_access,
-    "05 · Border": page_border,
-    "06 · Energy": page_energy,
-    "07 · Method": page_method,
-    "08 · Population": page_population,
-    "09 · Projection": page_projection,
-    "10 · Development": page_development,
-    "11 · Simulation": page_simulation,
+# =====================================================================
+# Navigation
+# =====================================================================
+#
+# Two controls rather than one long list. The first picks the city, because
+# that is the question a reader arrives with; the second picks the section
+# within it. Fourteen items in a single flat list is a wall, and it hides the
+# fact that the two cities are analysed to very different depths.
+
+SCOPES: dict[str, dict[str, object]] = {
+    "Overview — both cities": {
+        "What this is": lambda: page_start(),
+        "Side by side": lambda: page_compare(),
+        "Where the numbers come from": lambda: page_method(),
+    },
+    "Enschede": {
+        "The seven limits": lambda: page_constraints(),
+        "Nitrogen": lambda: page_nitrogen(),
+        "Energy and travel": lambda: page_mobility(),
+        "Reaching a station": lambda: page_access(),
+        "The German border": lambda: page_border(),
+        "Land for energy": lambda: page_energy(),
+    },
+    "Cape Town": {
+        "Running out of room": lambda: page_cape_town(),
+        "Side by side with Enschede": lambda: page_compare(),
+    },
+    "Data and models": {
+        "Population": lambda: page_population(),
+        "Predicting 2050": lambda: page_projection(),
+        "Where building happens": lambda: page_development(),
+        "Simulating growth": lambda: page_simulation(),
+    },
+}
+
+SCOPE_BLURB = {
+    "Overview — both cities": "The argument in short, and the two cities against each other.",
+    "Enschede": "Plenty of land, and still cannot build. Six things in the way.",
+    "Cape Town": "Almost no land left, and the land that is left is the wrong land.",
+    "Data and models": "Population history, a forecast you can argue with, and two models.",
 }
 
 
@@ -1783,11 +1837,20 @@ def main() -> None:
         initial_sidebar_state="expanded",
     )
     alt.data_transformers.disable_max_rows()
+    chrome.inject()
 
     with st.sidebar:
         st.markdown("### Cape Town & Enschede")
         st.caption("what limits building")
-        choice = st.radio("Section", list(PAGES), label_visibility="collapsed")
+        st.write("")
+
+        scope = st.radio("Show me", list(SCOPES), key="scope")
+        st.caption(SCOPE_BLURB[scope])
+        st.divider()
+
+        sections = SCOPES[scope]
+        section = st.radio("Section", list(sections), key=f"section_{scope}")
+
         st.divider()
         st.caption(
             "Every number says how solid it is — official, derived, engineering or estimate — "
@@ -1795,7 +1858,7 @@ def main() -> None:
             "is written so it still holds if the number changes."
         )
 
-    PAGES[choice]()
+    sections[section]()
 
 
 if __name__ == "__main__":
