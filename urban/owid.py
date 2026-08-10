@@ -223,7 +223,9 @@ def raster(
         colour = alt.Color(
             f"{value}:Q", title=legend_title or None,
             scale=alt.Scale(range=DIVERGING, domain=[-limit, limit]),
-            legend=alt.Legend(orient="right", gradientLength=200))
+            legend=alt.Legend(orient="bottom", direction="horizontal",
+                              gradientLength=210, gradientThickness=10,
+                              titleLimit=200, labelLimit=120))
     else:
         # `domain` is omitted rather than passed as None: an explicit None is a
         # value the schema rejects, where an absent key means "infer it".
@@ -233,7 +235,9 @@ def raster(
         colour = alt.Color(
             f"{value}:Q", title=legend_title or None,
             scale=alt.Scale(**scale_kwargs),
-            legend=alt.Legend(orient="right", gradientLength=200))
+            legend=alt.Legend(orient="bottom", direction="horizontal",
+                              gradientLength=210, gradientThickness=10,
+                              titleLimit=200, labelLimit=120))
 
     cells_layer = (
         alt.Chart(df)
@@ -289,6 +293,8 @@ def raster(
                 layers.append(
                     alt.Chart(subset).mark_text(**spec, color=INK).encode(**enc))
 
+    # Height carries the plot plus the legend band beneath it; without the
+    # extra room the legend is cropped into a nested scrollbar.
     return style(alt.layer(*layers).properties(
         width=SHED_PX, height=SHED_PX, title=title or ""))
 
@@ -331,15 +337,16 @@ def residual_plot(df: pd.DataFrame, height: int = 200) -> alt.Chart:
 
 def horizontal_bars(df: pd.DataFrame, label: str, value: str, *,
                     x_title: str, height: int = 200, value_format: str = ",.2f",
-                    diverging: bool = False) -> alt.Chart:
+                    diverging: bool = False, label_limit: int = 320) -> alt.Chart:
     """Ranked bars with the value at the tip."""
     order = df.sort_values(value, ascending=False)[label].tolist()
     colour = (alt.condition(alt.datum[value] >= 0, alt.value(SERIES[0]), alt.value(SERIES[1]))
               if diverging else alt.value(SERIES[0]))
     bars = alt.Chart(df).mark_bar(cornerRadiusEnd=4, height=16).encode(
         y=alt.Y(f"{label}:N", sort=order, title=None,
-                axis=alt.Axis(labelColor=INK, labelFontSize=12, labelLimit=260)),
+                axis=alt.Axis(labelColor=INK, labelFontSize=12, labelLimit=label_limit)),
         x=alt.X(f"{value}:Q", title=x_title,
+                scale=alt.Scale(nice=True, padding=8),
                 axis=alt.Axis(grid=True, gridColor=GRID)),
         color=colour,
         tooltip=[label, alt.Tooltip(f"{value}:Q", format=value_format)])

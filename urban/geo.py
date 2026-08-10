@@ -1,0 +1,232 @@
+"""Real maps, on real coordinates, over OpenStreetMap.
+
+Until now the spatial figures were drawn on a stylised disc: honest about being
+a stylisation, and hard to relate to anywhere you have actually been. These are
+the same analyses on real latitude and longitude with an OpenStreetMap
+background, so a station is where the station is and a 800 m circle is 800 m.
+
+Two things to know about the tiles.
+
+  * The basemap is fetched from OpenStreetMap's public tile servers at view
+    time. That needs outbound internet from wherever the app runs. Streamlit
+    Cloud has it; the sandbox this was written in did not, so the tile rendering
+    could not be verified locally — the layers, coordinates and radii could.
+  * OSM's tile usage policy requires attribution, and every map here carries it.
+
+Coordinates are given to four decimal places, which is about ten metres, and
+they are hand-placed rather than geocoded. That is well inside the tolerance of
+anything computed from them: the circles are kilometres wide.
+"""
+
+from __future__ import annotations
+
+import pandas as pd
+import pydeck as pdk
+
+from .theme import SERIES
+
+OSM_TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+OSM_ATTRIBUTION = "Basemap © OpenStreetMap contributors, ODbL."
+
+
+def _rgb(hex_colour: str, alpha: int = 255) -> list[int]:
+    h = hex_colour.lstrip("#")
+    return [int(h[i:i + 2], 16) for i in (0, 2, 4)] + [alpha]
+
+
+BLUE = _rgb(SERIES[0])
+ORANGE = _rgb(SERIES[1])
+GREEN = _rgb(SERIES[2])
+
+
+# ---------------------------------------------------------------------
+# Enschede
+# ---------------------------------------------------------------------
+
+ENSCHEDE_CENTRE = (52.2215, 6.8937)
+
+STATIONS = pd.DataFrame([
+    {"name": "Enschede Centraal", "lat": 52.2233, "lon": 6.8892,
+     "note": "Terminus from the west, and the interchange to the German service."},
+    {"name": "Enschede Kennispark", "lat": 52.2394, "lon": 6.8494,
+     "note": "University campus and science park."},
+    {"name": "Enschede De Eschmarke", "lat": 52.2264, "lon": 6.9351,
+     "note": "Eastern suburban stop, on the line toward the border."},
+])
+
+PLACES = pd.DataFrame([
+    {"name": "City centre", "kind": "Retail", "lat": 52.2205, "lon": 6.8937},
+    {"name": "Medisch Spectrum Twente", "kind": "Hospital", "lat": 52.2185, "lon": 6.8850},
+    {"name": "Roombeek", "kind": "Housing", "lat": 52.2333, "lon": 6.8900},
+    {"name": "Kennispark", "kind": "Employment", "lat": 52.2394, "lon": 6.8494},
+    {"name": "De Eschmarke", "kind": "Housing", "lat": 52.2264, "lon": 6.9351},
+    {"name": "Aamsveen (protected bog)", "kind": "Protected", "lat": 52.1900, "lon": 6.9600},
+    {"name": "Glanerbrug (German border)", "kind": "Border", "lat": 52.2200, "lon": 6.9750},
+])
+
+
+# ---------------------------------------------------------------------
+# Cape Town
+# ---------------------------------------------------------------------
+
+CAPE_TOWN_CENTRE = (-33.9800, 18.5600)
+
+CT_PLACES = pd.DataFrame([
+    {"name": "City centre (CBD)", "kind": "Employment", "lat": -33.9249, "lon": 18.4241},
+    {"name": "Cape Town station", "kind": "Rail", "lat": -33.9222, "lon": 18.4256},
+    {"name": "Table Mountain", "kind": "Protected", "lat": -33.9628, "lon": 18.4098},
+    {"name": "Cape Flats (Khayelitsha)", "kind": "Housing", "lat": -34.0400, "lon": 18.6700},
+    {"name": "Mitchells Plain", "kind": "Housing", "lat": -34.0350, "lon": 18.6180},
+    {"name": "Philippi horticultural area", "kind": "Agriculture", "lat": -34.0100, "lon": 18.5700},
+    {"name": "Cape Town International", "kind": "Transport", "lat": -33.9690, "lon": 18.6017},
+])
+
+KIND_COLOUR = {
+    "Retail": ORANGE, "Hospital": ORANGE, "Housing": BLUE, "Employment": BLUE,
+    "Protected": GREEN, "Border": ORANGE, "Rail": ORANGE, "Agriculture": GREEN,
+    "Transport": BLUE,
+}
+
+
+# ---------------------------------------------------------------------
+# Map builders
+# ---------------------------------------------------------------------
+
+def _tile_layer() -> pdk.Layer:
+    """The OpenStreetMap raster basemap.
+
+    A raw tile layer rather than a hosted vector style, so the map needs no API
+    key and no account — which matters for something meant to be forked and run
+    by someone else.
+    """
+    return pdk.Layer(
+        "TileLayer",
+        data=OSM_TILES,
+        min_zoom=0,
+        max_zoom=19,
+        tile_size=256,
+        opacity=0.62,  # tiles recede so the data layers read on top of them
+    )
+
+
+def station_catchment_map(
+    radius_m: float,
+    *,
+    stations: pd.DataFrame | None = None,
+    centre: tuple[float, float] = ENSCHEDE_CENTRE,
+    zoom: float = 11.2,
+    height: int = 460,
+) -> pdk.Deck:
+    """Stations with a real catchment circle around each one.
+
+    The circles are drawn in metres on the ground, so the thing the access
+    section argues about — that the radius is a choice, and that area grows with
+    its square — is visible against streets you can recognise rather than
+    against a stylised disc.
+    """
+    df = (stations if stations is not None else STATIONS).copy()
+    df["radius"] = radius_m
+
+    return pdk.Deck(
+        layers=[
+            _tile_layer(),
+            pdk.Layer(
+                "ScatterplotLayer",
+                data=df,
+                get_position=["lon", "lat"],
+                get_radius="radius",
+                get_fill_color=[*BLUE[:3], 55],
+                get_line_color=[*BLUE[:3], 200],
+                line_width_min_pixels=2,
+                stroked=True,
+                filled=True,
+                pickable=False,
+            ),
+            pdk.Layer(
+                "ScatterplotLayer",
+                data=df,
+                get_position=["lon", "lat"],
+                get_radius=90,
+                radius_min_pixels=5,
+                get_fill_color=ORANGE,
+                get_line_color=[255, 255, 255, 230],
+                line_width_min_pixels=2,
+                stroked=True,
+                pickable=True,
+            ),
+        ],
+        initial_view_state=pdk.ViewState(
+            latitude=centre[0], longitude=centre[1], zoom=zoom, pitch=0),
+        tooltip={"text": "{name}\n{note}"},
+        height=height,
+        map_provider=None,   # the tile layer is the basemap; no provider needed
+        map_style=None,
+    )
+
+
+def places_map(
+    places: pd.DataFrame,
+    *,
+    centre: tuple[float, float],
+    zoom: float = 10.4,
+    height: int = 460,
+) -> pdk.Deck:
+    """Named locations, coloured by what they are."""
+    df = places.copy()
+    df["colour"] = df["kind"].map(lambda k: KIND_COLOUR.get(k, BLUE))
+
+    return pdk.Deck(
+        layers=[
+            _tile_layer(),
+            pdk.Layer(
+                "ScatterplotLayer",
+                data=df,
+                get_position=["lon", "lat"],
+                get_radius=420,
+                radius_min_pixels=7,
+                get_fill_color="colour",
+                get_line_color=[255, 255, 255, 230],
+                line_width_min_pixels=2,
+                stroked=True,
+                pickable=True,
+            ),
+            pdk.Layer(
+                "TextLayer",
+                data=df,
+                get_position=["lon", "lat"],
+                get_text="name",
+                get_size=12,
+                get_color=[20, 20, 20, 235],
+                get_pixel_offset=[0, -18],
+                background=True,
+                get_background_color=[252, 252, 251, 205],
+                background_padding=[4, 2, 4, 2],
+                size_units="pixels",
+            ),
+        ],
+        initial_view_state=pdk.ViewState(
+            latitude=centre[0], longitude=centre[1], zoom=zoom, pitch=0),
+        tooltip={"text": "{name} — {kind}"},
+        height=height,
+        map_provider=None,
+        map_style=None,
+    )
+
+
+def legend_html(entries: list[tuple[str, str]]) -> str:
+    """A legend that is always visible, rather than one deck.gl does not draw.
+
+    pydeck has no legend of its own, so a map without this has colours the
+    reader has to guess at. Rendered as plain HTML under the map.
+    """
+    items = "".join(
+        f'<span style="display:inline-flex;align-items:center;gap:6px;'
+        f'margin-right:18px;font-size:0.78rem;white-space:nowrap">'
+        f'<span style="width:11px;height:11px;border-radius:3px;'
+        f'background:{colour};display:inline-block"></span>{label}</span>'
+        for label, colour in entries
+    )
+    return (
+        f'<div style="display:flex;flex-wrap:wrap;gap:4px 0;margin:0.55rem 0 0.2rem 0">'
+        f'{items}</div>'
+    )

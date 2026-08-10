@@ -163,6 +163,24 @@ CSS = f"""
       max-width: 78ch;
   }}
 
+  /* ---------- maps and legends ----------
+     deck.gl draws no legend of its own, so every map carries one in HTML
+     underneath it. The container is given room for the axis/legend band so
+     nothing is cropped into a nested scrollbar. */
+  .map-wrap {{ margin: 0.2rem 0 0.4rem 0; }}
+  .map-note {{
+      font-size: 0.72rem;
+      color: {INK_3};
+      margin-top: 0.35rem;
+  }}
+
+  /* Charts must never be clipped by their card. */
+  [data-testid="stVegaLiteChart"] {{ overflow: visible !important; }}
+  [data-testid="stVegaLiteChart"] > div {{ overflow: visible !important; }}
+
+  /* Legends and axis text large enough to read. */
+  .vega-embed .role-legend text {{ font-size: 11px !important; }}
+
   /* ---------- hero ---------- */
   .hero {{
       border-top: 2px solid {INK};

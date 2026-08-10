@@ -16,6 +16,7 @@ import pandas as pd
 import streamlit as st
 
 from . import demography as dem
+from . import geo
 from . import owid
 from . import spatial as sp
 from .forecast import MODELS, compare_all, fit_and_forecast
@@ -662,6 +663,67 @@ def page_cape_town() -> None:
     provenance("derived", "City of Cape Town")
 
     st.divider()
+    figure("02", "Cape Town on the map",
+           "The places this section talks about, on an OpenStreetMap background.",
+           "Notice the geography doing the work: the CBD is pinned against the mountain and the "
+           "sea in the north-west, while the housing is twenty-five kilometres away on the "
+           "Cape Flats, out past the airport.")
+    st.pydeck_chart(geo.places_map(geo.CT_PLACES, centre=geo.CAPE_TOWN_CENTRE, zoom=9.6),
+                    height=470)
+    st.markdown(geo.legend_html([
+        ("Jobs and transport", SERIES[0]),
+        ("Centre, rail and edges", SERIES[1]),
+        ("Protected or farmed", SERIES[2]),
+    ]), unsafe_allow_html=True)
+    st.caption(f"{geo.OSM_ATTRIBUTION} Positions are approximate.")
+
+    st.divider()
+    figure("03", "How much room is actually left",
+           "Land per person, counted three ways.",
+           "The headline is 895 km² for 4.8 million people. But most of that is already built "
+           "on. What is left to build on works out at about 52 m² each — a quarter of a tennis "
+           "court per person, including all the roads and parks that land still has to carry.")
+    budget = ct.land_budget()
+    st.altair_chart(
+        owid.horizontal_bars(budget.assign(**{"m² per person": budget["m2_per_person"].round(0)}),
+                             "measure", "m² per person",
+                             x_title="m² of land per resident", height=190,
+                             value_format=",.0f"),
+        width="stretch", key="ct_budget")
+    values_table(budget[["measure", "km2", "note"]])
+    provenance("derived", "City of Cape Town figures, built share estimated")
+
+    st.divider()
+    figure("04", "Protection comes in three layers",
+           "Each tier restricts development a little less than the one above it.",
+           "The headline protected figure is 22.7%. Add the two tiers below it and roughly a "
+           "third of the city is restricted — which is why the buildable area is so much smaller "
+           "than the municipality.")
+    stack = ct.biodiversity_stack()
+    st.altair_chart(
+        owid.horizontal_bars(stack, "tier", "share",
+                             x_title="% of land in this tier", height=180,
+                             value_format=".1f"),
+        width="stretch", key="ct_bionet")
+    values_table(stack)
+    provenance("official", "City of Cape Town biodiversity plan")
+
+    st.divider()
+    figure("05", "Density, on the land people actually occupy",
+           "People per km² of buildable land, not of whole municipality.",
+           "Cape Town is already denser than Enschede or Johannesburg on the land it uses. The "
+           "problem is not that Cape Town is sprawling by world standards — it is that the land "
+           "it has left is the worst land it has.")
+    dens = ct.density_comparison()
+    st.altair_chart(
+        owid.horizontal_bars(dens, "city", "people_per_km2",
+                             x_title="people per km² of usable land", height=210,
+                             value_format=",.0f"),
+        width="stretch", key="ct_density")
+    values_table(dens)
+    provenance("estimate", "Mixed bases — see the table; the comparators are not recomputed here")
+
+    st.divider()
     st.subheader("The four limits")
     note("Two of these are lines on a map and two are measurements. That split matters, "
          "because you can only argue about a line, whereas a measurement can be brought down.")
@@ -691,10 +753,18 @@ def page_cape_town() -> None:
         f"The sand that makes the water reachable is the same sand that lets anything spilled "
         f"on the surface reach it."
     )
+    _, aquifer_days = ct.water_budget()
     st.info(
         "**So the limit pushes housing onto the one piece of land where building up is most "
         "expensive and where building at all threatens the water.** Every part of that is a "
         "reasonable decision on its own. Together they trap the city."
+    )
+    note(
+        f"It is worth knowing how much water that actually is. The aquifer's "
+        f"{ct.AQUIFER_YIELD_MM3} million cubic metres a year sounds enormous. Divided by what "
+        f"the city drinks, it is about **{aquifer_days} days** of supply. That is not a "
+        f"replacement for the dams — it is a buffer, and a buffer is exactly the kind of thing "
+        f"you cannot afford to contaminate."
     )
 
     st.divider()

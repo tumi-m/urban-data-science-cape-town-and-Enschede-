@@ -46,7 +46,7 @@ from urban.pages import (  # noqa: E402
     page_cape_town, page_compare, page_development, page_population,
     page_projection, page_simulation,
 )
-from urban import chrome  # noqa: E402
+from urban import chrome, geo  # noqa: E402
 
 
 # =====================================================================
@@ -915,7 +915,26 @@ def page_access() -> None:
     )
 
     st.divider()
-    figure("01", "How much of Enschede each station reaches",
+    figure("01", "Enschede's three stations on the map",
+           "The real stations, with a real catchment circle around each one. Change the travel "
+           "mode to change the radius.",
+           "The circles are drawn in metres on the ground. Switch from walking to cycling and "
+           "watch them swallow most of the city — the stations have not moved and no track has "
+           "been laid.")
+    map_mode = st.radio("Travel mode to the station",
+                        [m["label"] for m in ACCESS_MODES], horizontal=True, key="osm_mode")
+    map_radius = next(m["radius_km"] for m in ACCESS_MODES if m["label"] == map_mode) * 1000
+    st.pydeck_chart(geo.station_catchment_map(map_radius), height=470)
+    st.markdown(
+        geo.legend_html([("Station", SERIES[1]), ("Area within reach", SERIES[0])]),
+        unsafe_allow_html=True)
+    st.caption(
+        f"{map_mode} radius drawn at {map_radius / 1000:.1f} km. {geo.OSM_ATTRIBUTION} "
+        "Station positions are hand-placed to about ten metres."
+    )
+
+    st.divider()
+    figure("02", "How much of Enschede each station reaches",
            "Grey shading is where people live — darker is denser. Blue is what is within "
            "reach of a station at the radius you pick.",
            "Switch between walking, bicycle and e-bike in the controls. The stations do not "
@@ -981,7 +1000,7 @@ def page_access() -> None:
     )
 
     st.divider()
-    figure("02", "Counting land instead of people",
+    figure("03", "Counting land instead of people",
            "The same coverage counted two ways: share of residents in orange, share of land "
            "in blue, as the radius grows.",
            "The orange line sits above the blue one. Counting land undercounts access, "
@@ -1017,7 +1036,7 @@ def page_access() -> None:
     )
 
     st.divider()
-    figure("03", "Cape Town's stations, if people cycled instead of walked",
+    figure("04", "Cape Town's stations, if people cycled instead of walked",
            "Cape Town's existing stations under three assumptions about how far people will "
            "travel to reach one. The orange line is the whole buildable area.",
            "At walking distance the stations cover a fifth of the city. At cycling distance "
@@ -1920,16 +1939,19 @@ def main() -> None:
         st.caption("what limits building")
         st.write("")
 
-        part = st.radio("Part of the report", list(PARTS), key="part",
-                         label_visibility="visible")
+        # Dropdowns rather than radio lists: five parts and up to six sections
+        # is thirteen always-visible options in a narrow column, which pushes
+        # everything else below the fold. A closed select shows where you are
+        # in one line and opens to the rest.
+        part = st.selectbox("Part of the report", list(PARTS), key="part")
         st.caption(PART_BLURB[part])
-        st.write("")
 
         sections = PARTS[part]
         if len(sections) > 1:
-            section = st.radio("Section", list(sections), key=f"section_{part}")
+            section = st.selectbox("Section", list(sections), key=f"section_{part}")
         else:
             section = next(iter(sections))
+            st.caption(f"→ {section}")
 
         st.divider()
         st.caption(

@@ -190,3 +190,114 @@ SHARED_LESSONS = [
      "opening the German border to commuting. In both cases the thing that would help most "
      "costs a fraction of what new infrastructure costs."),
 ]
+
+
+# ---------------------------------------------------------------------
+# Live data from the City of Cape Town open data portal
+# ---------------------------------------------------------------------
+#
+# The city publishes its spatial layers through an ArcGIS Open Data portal.
+# The fetch below is real code against real endpoints; it returns None when the
+# host has no outbound access, and every chart drawn from the fallback says so.
+# The sandbox this was written in could not reach the portal, so the fallback
+# path is the one that has actually been exercised.
+
+CCT_PORTAL = "https://odp-cctegis.opendata.arcgis.com"
+CCT_LAYERS = {
+    "rail_stations": "Metrorail stations",
+    "urban_edge": "Urban development edge",
+    "bionet": "Biodiversity network",
+    "suburbs": "Official suburbs",
+}
+
+
+def fetch_cct_layer(layer: str, timeout: int = 8):
+    """Try the open data portal. None when it cannot be reached.
+
+    Deliberately failure-tolerant: an unavailable portal should degrade the app
+    to a labelled fallback, not break the page.
+    """
+    try:  # pragma: no cover - depends on host network
+        import json
+        import urllib.request
+
+        url = f"{CCT_PORTAL}/datasets/{layer}.geojson"
+        with urllib.request.urlopen(url, timeout=timeout) as r:
+            return json.loads(r.read().decode("utf-8"))
+    except Exception:
+        return None
+
+
+# ---------------------------------------------------------------------
+# Further analysis from the published figures
+# ---------------------------------------------------------------------
+
+def land_budget() -> pd.DataFrame:
+    """How much room per person is left, under three ways of counting.
+
+    The headline "895 km² for 4.8 million people" hides the fact that most of
+    that land is already built on. What matters for the next million people is
+    what is left, and on the city's own numbers that is a small number.
+    """
+    built_share = 0.72   # share of the urban edge already developed, estimate
+    remaining = URBAN_EDGE_KM2 * (1 - built_share)
+    return pd.DataFrame([
+        {"measure": "Whole municipality", "km2": MUNICIPAL_KM2,
+         "m2_per_person": MUNICIPAL_KM2 * 1e6 / POPULATION,
+         "note": "Includes mountain, ocean-front and protected land."},
+        {"measure": "Inside the urban edge", "km2": URBAN_EDGE_KM2,
+         "m2_per_person": URBAN_EDGE_KM2 * 1e6 / POPULATION,
+         "note": "All land where building is permitted at all."},
+        {"measure": "Still undeveloped inside the edge", "km2": round(remaining),
+         "m2_per_person": remaining * 1e6 / POPULATION,
+         "note": "What is actually left to build on. Estimate of the built share."},
+    ])
+
+
+def biodiversity_stack() -> pd.DataFrame:
+    """Protection comes in layers, and they add up faster than the headline."""
+    return pd.DataFrame([
+        {"tier": "Formally protected", "share": PROTECTED_SHARE,
+         "what": "Parks, nature reserves and marine protected areas. No development."},
+        {"tier": "Critical biodiversity areas", "share": CBA_SHARE,
+         "what": "Needed to meet national biodiversity targets. Development must avoid habitat loss."},
+        {"tier": "Ecological support areas", "share": ESA_SHARE,
+         "what": "Keeps the protected areas connected. Heavy infrastructure is hard to route."},
+    ])
+
+
+def density_comparison() -> pd.DataFrame:
+    """Cape Town against other cities, on land people actually occupy.
+
+    Gross municipal density flatters a city with a mountain in it and punishes
+    one with farmland. Density over the buildable area is the fairer number and
+    it is the one that decides whether transit can work.
+    """
+    return pd.DataFrame([
+        {"city": "Cape Town", "people_per_km2": round(PEOPLE_PER_BUILDABLE_KM2),
+         "basis": "Inside the urban development edge."},
+        {"city": "Enschede", "people_per_km2": round(161_000 / 43),
+         "basis": "Built-up area only."},
+        {"city": "Johannesburg", "people_per_km2": 2_900,
+         "basis": "Municipal area. Comparative figure, not recomputed here."},
+        {"city": "Amsterdam", "people_per_km2": 5_200,
+         "basis": "Municipal land area. Comparative figure, not recomputed here."},
+        {"city": "Lagos", "people_per_km2": 7_900,
+         "basis": "Metropolitan area. Comparative figure, not recomputed here."},
+    ])
+
+
+def water_budget() -> pd.DataFrame:
+    """What the aquifer is worth, in days of city supply.
+
+    The 18 million m³ a year figure means nothing on its own. Divided by what
+    the city drinks, it becomes a number anyone can hold: roughly how long the
+    aquifer alone could carry Cape Town.
+    """
+    litres_per_person_day = 180          # post-drought consumption, estimate
+    daily_demand_m3 = POPULATION * litres_per_person_day / 1000
+    annual_demand_m3 = daily_demand_m3 * 365
+    return pd.DataFrame([
+        {"measure": "Aquifer yield", "m3_per_year": AQUIFER_YIELD_MM3 * 1e6},
+        {"measure": "City demand", "m3_per_year": round(annual_demand_m3)},
+    ]), round(AQUIFER_YIELD_MM3 * 1e6 / daily_demand_m3)

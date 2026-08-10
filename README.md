@@ -84,6 +84,7 @@ study.
 | Bespoke figures | D3 (`d3-scale`, `d3-shape`, `d3-selection`, `d3-array`) | The four figures that are geometry rather than charts: constraint shapes, the cut catchment disc, the ridge transect, the station access sheds |
 | Types | TypeScript, strict | Every quantity is a typed value with a unit, a class and a source |
 | ML / stats | scikit-learn, SciPy | Model registry, backtesting, development classifier, growth-curve fitting |
+| Maps | pydeck (deck.gl) over OpenStreetMap raster tiles | Real coordinates and real catchment radii, with no API key or account needed |
 | Streamlit app | Streamlit + Altair | Python port of the platform, plus the interactive modelling sections |
 
 ### Chart rules the codebase enforces
@@ -138,6 +139,8 @@ urban/                  the modelling layer
   forecast.py           model registry, tail backtesting, projection to 2050
   spatial.py            development classifier, hedonic surface, growth simulation
   owid.py               chart forms in the Our World in Data idiom
+  geo.py                real coordinates and OpenStreetMap maps
+  capetown.py           Cape Town figures, portal fetch path, and further analysis
   theme.py / ui.py      tokens and layout primitives shared with the app
 ```
 
