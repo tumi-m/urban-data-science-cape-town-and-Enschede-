@@ -1,0 +1,12 @@
+{
+  "name": "OpenCode Cloud Server",
+  "image": "mcr.microsoft.com/devcontainers/python:3",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {}
+  },
+  "remoteEnv": {
+    "OLLAMA_API_KEY": "${localEnv:OLLAMA_API_KEY}"
+  },
+  "postCreateCommand": "curl -fsSL https://raw.githubusercontent.com/opencode-ai/opencode/refs/heads/main/install | bash",
+  "postStartCommand": "nohup bash -c 'opencode serve --hostname 0.0.0.0 --port 4096 &' > /dev/null 2>&1"
+}
