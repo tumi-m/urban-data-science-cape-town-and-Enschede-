@@ -23,4 +23,4 @@ jobs:
         env:
           OLLAMA_API_KEY: ${{ secrets.OLLAMA_API_KEY }}
         with:
-          model: ollama/glm-5.2
+          model: ollama/glm-5.2:cloud
