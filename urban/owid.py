@@ -45,6 +45,7 @@ def line_with_end_labels(
     height: int = 330,
     y_domain: tuple | None = None,
     zero: bool = False,
+    x_format: str = "d",
 ) -> alt.Chart:
     """Multi-series lines, labelled at the right-hand end.
 
@@ -73,13 +74,13 @@ def line_with_end_labels(
         y_scale = alt.Scale(domain=list(y_domain), nice=False)
 
     base = alt.Chart(df).encode(
-        x=alt.X(f"{x}:Q", title=x_title, axis=alt.Axis(format="d", grid=False)),
+        x=alt.X(f"{x}:Q", title=x_title, axis=alt.Axis(format=x_format, grid=False)),
         y=alt.Y(f"{y}:Q", title=y_title, scale=y_scale,
                 axis=alt.Axis(format=y_format, grid=True, gridColor=GRID)),
     )
     lines = base.mark_line(strokeWidth=2, strokeCap="round", strokeJoin="round").encode(
         color=stroke, opacity=opacity,
-        tooltip=[entity, alt.Tooltip(f"{x}:Q", format="d"),
+        tooltip=[entity, alt.Tooltip(f"{x}:Q", format=x_format),
                  alt.Tooltip(f"{y}:Q", format=y_format)],
     )
 
@@ -97,16 +98,17 @@ def line_with_end_labels(
 def single_line(
     df: pd.DataFrame, x: str, y: str, *, x_title: str, y_title: str,
     label: str | None = None, height: int = 300, y_format: str = ",.0f",
-    zero: bool = False, colour: str = SERIES[0],
+    zero: bool = False, colour: str = SERIES[0], x_format: str = "d",
 ) -> alt.Chart:
     """One series needs no legend — the title already says what is plotted."""
     base = alt.Chart(df).encode(
-        x=alt.X(f"{x}:Q", title=x_title, axis=alt.Axis(format="d", grid=False)),
+        x=alt.X(f"{x}:Q", title=x_title, axis=alt.Axis(format=x_format, grid=False)),
         y=alt.Y(f"{y}:Q", title=y_title, scale=alt.Scale(zero=zero),
                 axis=alt.Axis(format=y_format, grid=True, gridColor=GRID)),
     )
     line = base.mark_line(strokeWidth=2, strokeCap="round", color=colour).encode(
-        tooltip=[alt.Tooltip(f"{x}:Q", format="d"), alt.Tooltip(f"{y}:Q", format=y_format)])
+        tooltip=[alt.Tooltip(f"{x}:Q", format=x_format),
+                 alt.Tooltip(f"{y}:Q", format=y_format)])
     last = df.sort_values(x).tail(1)
     dot = alt.Chart(last).mark_point(
         filled=True, size=70, color=colour, stroke=SURFACE, strokeWidth=2).encode(
