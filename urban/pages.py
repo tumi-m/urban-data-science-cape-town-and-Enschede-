@@ -15,6 +15,8 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
+from . import animate
+from . import cities
 from . import demography as dem
 from . import geo
 from . import owid
@@ -28,103 +30,185 @@ LAND_AREA_KM2 = 140.0
 SYNTHETIC_GRID = Series(
     "Cell grid, development labels and value surface", SYNTHETIC,
     "Generated from the stated process in urban/spatial.py",
-    "Not observations of Enschede. The models below recover assumptions that were put in "
-    "deliberately; swap in the municipal register and the WOZ valuation file to make them real.",
+    "Not observations of either city. The models below recover assumptions that were put in "
+    "deliberately; swap in the municipal development register and the valuation roll — the WOZ "
+    "file in the Netherlands, the general valuation roll in Cape Town — to make them real.",
 )
 
 
 @st.cache_data
-def _population():
-    data = dem.load_population()
-    return data.frame, data.series
+def _population(city_name: str = "Enschede"):
+    return cities.pick(city_name).population()
 
 
 @st.cache_data
-def _grid():
-    return sp.build_grid()
+def _grid(city_name: str = "Enschede"):
+    return sp.build_grid(geometry=cities.pick(city_name).geometry)
+
+
+def _city():
+    """The city selector, shown once per machine-learning section.
+
+    The report used to analyse Enschede with four models and Cape Town with a
+    paragraph, which said more about the order the work was done in than about
+    either city. The models are the same models; the city is a parameter. It
+    lives in the sidebar above the section's own controls because it changes
+    what every one of them means.
+    """
+    with st.sidebar:
+        st.markdown("#### City")
+        name = st.selectbox(
+            "Analyse", list(cities.CITIES), key="ml_city",
+            label_visibility="collapsed",
+            help="Every model in this part runs on whichever city is selected.")
+    city = cities.pick(name)
+    st.caption(f"{city.name.upper()}, {city.country.upper()}  ·  {city.binding_constraint}")
+    return city
 
 
 # =====================================================================
 # 08 · Population
 # =====================================================================
 
+@st.cache_data
+def _indexed_both() -> pd.DataFrame:
+    """Both cities' populations rebased to their first common year."""
+    out = []
+    for c in cities.CITIES.values():
+        f, _ = c.population()
+        base = float(f["population"].iloc[0])
+        out.append(pd.DataFrame({
+            "year": f["year"], "entity": c.name,
+            "index": f["population"] / base * 100,
+        }))
+    return pd.concat(out, ignore_index=True)
+
+
+def _flattest_stretch(frame: pd.DataFrame, window: int = 20) -> dict:
+    """The twenty years in which the city grew least.
+
+    Enschede's plateau was hardcoded as 1975–1995, which is right for Enschede
+    and meaningless for a city that never had one. Finding it instead means the
+    same statistic says something true about both: for Enschede it recovers the
+    textile collapse, and for Cape Town it reports the least-fast stretch of an
+    unbroken climb, which is the honest answer to the same question.
+    """
+    best = None
+    for start in range(len(frame) - window):
+        a = frame["population"].iloc[start]
+        b = frame["population"].iloc[start + window]
+        growth = b / a - 1
+        if best is None or growth < best["growth"]:
+            best = {"growth": float(growth),
+                    "start": int(frame["year"].iloc[start]),
+                    "end": int(frame["year"].iloc[start + window])}
+    return best
+
+
 def page_population() -> None:
-    frame, series = _population()
+    city = _city()
+    frame, series = _population(city.name)
     header(
         "08 · Population",
-        "How Enschede's population changed",
-        "Enschede's population did three different things, not one. It grew fast on the textile "
-        "industry until the early 1960s. Then it sat flat for about thirty years while that "
-        "industry collapsed and the city rebuilt itself around its university. Since the 1990s "
-        "it has grown slowly again, mostly from students and people moving from abroad. Any "
-        "model of this has to handle all three, and most of them just copy whichever one they "
-        "were shown most of.",
+        f"How {city.name}'s population changed",
+        f"{city.population_note} Any model of this has to handle the whole shape, and most of "
+        f"them just copy whichever part they were shown most of.",
     )
     data_badge(series)
 
     first, last = frame.iloc[0], frame.iloc[-1]
-    plateau = frame[(frame["year"] >= 1975) & (frame["year"] <= 1995)]
+    slowest = _flattest_stretch(frame)
     stats([
         ("Population", f"{last['population']:,.0f}", f"In {int(last['year'])}."),
-        ("Since 1950", f"+{(last['population'] / first['population'] - 1) * 100:.0f}%",
+        ("Since 1950", f"+{(last['population'] / first['population'] - 1) * 100:,.0f}%",
          f"From {first['population']:,.0f} in {int(first['year'])}."),
-        ("The plateau", f"+{(plateau['population'].iloc[-1] / plateau['population'].iloc[0] - 1) * 100:.0f}%",
-         "Across the two decades from 1975 — twenty years of essentially nothing."),
-        ("Gross density", f"{last['population'] / LAND_AREA_KM2:,.0f}/km²",
-         f"Over {LAND_AREA_KM2:.0f} km² of municipal land, most of which is not urban."),
+        ("Slowest twenty years", f"+{slowest['growth'] * 100:.0f}%",
+         f"{slowest['start']}–{slowest['end']}, the flattest stretch in the record."),
+        ("Gross density", f"{last['population'] / city.land_area_km2:,.0f}/km²",
+         f"Over {city.land_area_km2:,.0f} km² of municipal land, much of which is not urban."),
     ])
 
     st.divider()
     figure("01", "Population since 1950",
-           "Number of people living in Enschede, each year.",
-           "Three different things happened, and you can see all of them without any "
-           "statistics: a steep climb, a flat stretch of about thirty years, and a shallower "
-           "climb that never got back to the first slope.")
-    st.altair_chart(
-        owid.single_line(frame, "year", "population",
-                         x_title="", y_title="inhabitants", height=320),
-        width="stretch", key="pop_history")
+           f"Number of people living in {city.name}, each year. Press play to watch it arrive.",
+           "A plateau you watch arrive reads differently from one already drawn — which is the "
+           "only reason this moves. Drag the slider to stop anywhere.")
+    years = frame["year"].tolist()
+    animate.player(
+        f"pop_hist_{city.key}", years,
+        lambda i: st.altair_chart(
+            animate.lines_upto(
+                frame.assign(entity=city.name), "year", "population", "entity",
+                years[i], x_title="", y_title="inhabitants",
+                colours={city.name: city.accent},
+                x_domain=(years[0], years[-1]),
+                y_domain=(0, frame["population"].max() * 1.08), height=330),
+            width="stretch", key=f"pop_history_{city.key}"))
     provenance(series.klass, series.source)
 
     st.divider()
-    figure("02", "Compared with other places",
-           "Every line starts at 100 in the first year, so they show growth rates rather than "
-           "sizes.",
-           "Enschede is the blue line. Setting everything to 100 at the start is the only fair "
-           "way to compare a city of 160,000 with one of 900,000 — otherwise you are comparing "
-           "how big they are, which was not the question.")
-    comp = dem.comparators(frame["year"].to_numpy())
-    st.altair_chart(
-        owid.line_with_end_labels(comp, "year", "index", "entity",
-                                  x_title="", y_title="index, first year = 100",
-                                  highlight="Enschede", y_format=",.0f", height=340),
-        width="stretch", key="pop_indexed")
-    data_badge(dem.COMPARATOR_SERIES)
+    figure("02", "The two cities on one axis",
+           "Both start at 100 in 1950, so the lines show growth rates rather than sizes. "
+           "Press play.",
+           "This is the comparison the report exists to make, and it only works indexed: "
+           "Cape Town added more people since 1950 than Enschede has ever had, so on an "
+           "absolute axis Enschede would be a flat line along the bottom.")
+    both = _indexed_both()
+    shared = sorted(set(both[both["entity"] == "Enschede"]["year"])
+                    & set(both[both["entity"] == "Cape Town"]["year"]))
+    palette = {c.name: c.accent for c in cities.CITIES.values()}
+    animate.player(
+        "pop_indexed_both", shared,
+        lambda i: st.altair_chart(
+            animate.lines_upto(
+                both, "year", "index", "entity", shared[i],
+                x_title="", y_title="index, 1950 = 100", colours=palette,
+                x_domain=(shared[0], shared[-1]),
+                y_domain=(0, both["index"].max() * 1.08), height=340),
+            width="stretch", key="pop_indexed_both_chart"))
+    provenance("derived", "Both population series, rebased to 1950.")
 
     st.divider()
-    figure("03", "What drives the change: births, and people moving",
-           "Three things that add or remove people each year. Bars above zero add, bars below "
-           "take away.",
-           "The overall change is the distance from the bottom of the stack to the top — not "
-           "the height of any one bar. Watch the blue shrink: births minus deaths used to add "
-           "2,000 people a year and now adds almost none.")
-    flows = dem.components_of_change(frame["year"].to_numpy())
-    long = flows.melt(id_vars="year", var_name="component", value_name="people")
-    st.altair_chart(
-        owid.stacked_components(long, "year", "people", "component",
-                                x_title="", y_title="people per year", height=300),
-        width="stretch", key="pop_flows")
-    values_table(flows.tail(20))
-    data_badge(dem.FLOW_SERIES)
-    note(
-        "This is the chart that explains the plateau, and it is the one a total-population line "
-        "cannot show. Natural increase fell away decades ago and is now marginal. Net domestic "
-        "migration has been negative for most of the period — Enschede trains graduates and the "
-        "Randstad hires them, which is the standard fate of a university city far from the "
-        "economic core. What has held the total up since the 1990s is international migration. "
-        "A city whose growth rests on one of three components, and the most policy-sensitive "
-        "one, has a thinner base than its headline number suggests."
-    )
+    if city.key == "enschede":
+        figure("03", "What drives the change: births, and people moving",
+               "Three things that add or remove people each year. Bars above zero add, bars "
+               "below take away.",
+               "The overall change is the distance from the bottom of the stack to the top — not "
+               "the height of any one bar. Watch the blue shrink: births minus deaths used to "
+               "add 2,000 people a year and now adds almost none.")
+        flows = dem.components_of_change(frame["year"].to_numpy())
+        long = flows.melt(id_vars="year", var_name="component", value_name="people")
+        st.altair_chart(
+            owid.stacked_components(long, "year", "people", "component",
+                                    x_title="", y_title="people per year", height=300),
+            width="stretch", key="pop_flows")
+        values_table(flows.tail(20))
+        data_badge(dem.FLOW_SERIES)
+        note(
+            "This is the chart that explains the plateau, and it is the one a total-population "
+            "line cannot show. Natural increase fell away decades ago and is now marginal. Net "
+            "domestic migration has been negative for most of the period — Enschede trains "
+            "graduates and the Randstad hires them, which is the standard fate of a university "
+            "city far from the economic core. What has held the total up since the 1990s is "
+            "international migration. A city whose growth rests on one of three components, and "
+            "the most policy-sensitive one, has a thinner base than its headline number suggests."
+        )
+    else:
+        st.subheader("What drives the change")
+        st.info(
+            "**This one chart is missing for Cape Town, and it is not being faked.** The "
+            "decomposition into births, domestic migration and international migration needs an "
+            "annual components-of-change series. There is a reconstructed one for Enschede in "
+            "this project; there is no equivalent here, and inventing South African internal "
+            "migration figures to fill the space would be worse than leaving it empty. "
+            "Stats SA's mid-year population estimates carry the components — wire those in and "
+            "this chart appears with no other change."
+        )
+        note(
+            "Every other model in this part runs identically on both cities. This is the only "
+            "place they differ, and it differs because of a missing input rather than a "
+            "decision about which city deserved the attention."
+        )
 
     st.divider()
     figure("04", "Two ways of measuring density",
@@ -133,7 +217,7 @@ def page_population() -> None:
            "When the two lines pull apart, the city is spreading out faster than it is growing. "
            "That is sprawl, and the whole-municipality figure cannot show it — it can sit "
            "perfectly flat while the built-up part empties out.")
-    density = dem.density_series(frame, land_area_km2=LAND_AREA_KM2)
+    density = dem.density_series(frame, land_area_km2=city.land_area_km2)
     tidy = pd.concat([
         density[["year", "gross_density"]].rename(columns={"gross_density": "value"})
             .assign(measure="Gross, per km² of municipality"),
@@ -144,7 +228,7 @@ def page_population() -> None:
         owid.line_with_end_labels(tidy, "year", "value", "measure",
                                   x_title="", y_title="inhabitants per km²",
                                   y_format=",.0f", height=320),
-        width="stretch", key="pop_density")
+        width="stretch", key=f"pop_density_{city.key}")
     note(
         "The two lines diverge, and the divergence is the definition of sprawl: population rose "
         "while the land it occupies rose faster, so the city got bigger and thinner at the same "
@@ -160,15 +244,15 @@ def page_population() -> None:
 # =====================================================================
 
 def page_projection() -> None:
-    frame, series = _population()
+    city = _city()
+    frame, series = _population(city.name)
     header(
         "09 · Projection",
-        "Predicting the population in 2050",
-        "Seventy-five years of a slow, smooth series cannot tell you whether Enschede is heading "
-        "for 175,000 people or 158,000. The choice of model decides that, and the choice of "
-        "model is a guess. So this is not a forecast. It is a control panel: change the model "
-        "and watch the 2050 number move by twenty thousand people while the data stays exactly "
-        "the same.",
+        f"Predicting {city.name}'s population in 2050",
+        f"Seventy-five years of a smooth series cannot tell you where this city is heading. The "
+        f"choice of model decides that, and the choice of model is a guess. So this is not a "
+        f"forecast. It is a control panel: change the model and watch 2050 move while the data "
+        f"stays exactly the same. {city.forecast_note}",
     )
     data_badge(series)
 
@@ -320,9 +404,10 @@ def page_projection() -> None:
 # =====================================================================
 
 def page_development() -> None:
+    city = _city()
     header(
         "10 · Development",
-        "Predicting where building happens",
+        f"Predicting where building happens in {city.name}",
         "Two models. One predicts which areas get built on, using how reachable they are, how "
         "dense they already are, and which land is off-limits. The other estimates what land is "
         "worth. Both run on made-up data, and this page keeps saying so, because a map of where "
@@ -331,7 +416,7 @@ def page_development() -> None:
     )
     data_badge(SYNTHETIC_GRID)
 
-    grid = _grid()
+    grid = _grid(city.name)
 
     with st.sidebar:
         st.markdown("#### Development model")
@@ -365,7 +450,7 @@ def page_development() -> None:
         "**Read these numbers correctly.** The labels were generated from these same features by "
         "a process written down in `urban/spatial.py`. A high score therefore measures whether "
         "the learner can recover assumptions that were deliberately put there — it is a test of "
-        "the pipeline, not evidence about Enschede. The honest use of this page is to check that "
+        f"the pipeline, not evidence about {city.name}. The honest use of this page is to check that "
         "the machinery works and to see how the classifier families differ; the moment real "
         "labels arrive, the same code becomes a real model and nothing else changes."
     )
@@ -375,18 +460,17 @@ def page_development() -> None:
     with c1:
         figure("01", "How likely each area is to be built on",
                "Darker blue means the model thinks building is more likely there.",
-               "The bite out of the bottom right is protected land, and the straight edge on "
-               "the right is the German border. Those are set to zero by the rules, not by the "
-               "model — the model never even sees them as an option.")
+               "The hole in the surface is protected land and the straight edge is the hard "
+               "boundary — the German border for Enschede, the Atlantic for Cape Town. Both are "
+               "set to zero by the rules, not by the model, which never sees them as an option.")
         st.altair_chart(
             owid.raster(model.grid, "p_develop", legend_title="p(develop)",
-                        points=sp.KNOWN_SITES, point_labels=True),
-            width="content", key="dev_map")
+                        points=city.sites(), point_labels=True),
+            width="content", key=f"dev_map_{city.key}")
         st.caption(
-            "Marked points are real Enschede locations — the hospital, the science park, "
-            "Roombeek, the eastern housing expansion. Coordinates are approximate and programme "
-            "and status are not verified; they are here to give the surface something recognisable "
-            "to be read against, not as a development register."
+            f"Marked points are real {city.name} locations. Coordinates are approximate and "
+            f"programme and status are not verified; they are here to give the surface something "
+            f"recognisable to be read against, not as a development register."
         )
     with c2:
         figure("02", "What the model uses to decide",
@@ -406,32 +490,46 @@ def page_development() -> None:
             width="stretch")
 
     st.divider()
-    st.subheader("Places in Enschede worth knowing")
-    st.dataframe(sp.KNOWN_SITES[["name", "kind", "note"]], hide_index=True, width="stretch")
-    note(
-        "One of these is worth pausing on. Most Dutch cities of this size moved acute hospital "
-        "care to a ring-road site with a large car park; Enschede rebuilt its regional hospital "
-        "on a central one. Read through the access section, that decision put the region's "
-        "single largest generator of non-discretionary trips inside the walking shed of the "
-        "central station instead of at the far end of a car journey — which is worth more, in "
-        "the nitrogen accounting of the earlier sections, than any number of parking norms "
-        "applied afterwards."
-    )
+    st.subheader(f"Places in {city.name} worth knowing")
+    st.dataframe(city.sites()[["name", "kind", "note"]], hide_index=True, width="stretch")
+    if city.key == "enschede":
+        note(
+            "One of these is worth pausing on. Most Dutch cities of this size moved acute "
+            "hospital care to a ring-road site with a large car park; Enschede rebuilt its "
+            "regional hospital on a central one. Read through the access section, that decision "
+            "put the region's single largest generator of non-discretionary trips inside the "
+            "walking shed of the central station instead of at the far end of a car journey — "
+            "which is worth more, in the nitrogen accounting of the earlier sections, than any "
+            "number of parking norms applied afterwards."
+        )
+    else:
+        note(
+            "Two of these are worth pausing on, and they are the same point twice. Khayelitsha "
+            "and Mitchells Plain hold well over a million people between them, and both sit "
+            "twenty kilometres from the CBD because they were placed there under apartheid-era "
+            "removals. That is why the density comparison in the Cape Town section is "
+            "misleading if read as a success: the city is dense, and dense in the places "
+            "furthest from the work. A model that allocates new building by accessibility "
+            "alone, as the one on this page does, will keep proposing the opposite pattern and "
+            "will be right to — which is a statement about the last seventy years, not a plan "
+            "for the next thirty."
+        )
 
     st.divider()
     figure("03", "What land is worth, by location",
            "Estimated price per square metre.",
            "Four things drive it: how far to the centre, how far to a station, how dense the "
            "area already is, and whether open space is next door. This is a made-up surface "
-           "showing the shape of the relationship, not Enschede prices.")
+           f"showing the shape of the relationship, not {city.name} prices.")
     grid_valued = model.grid.copy()
-    grid_valued["value_eur_m2"] = sp.value_surface(grid_valued)
+    grid_valued["value_eur_m2"] = sp.value_surface(
+        grid_valued, radius_km=city.geometry.radius_km)
     c3, c4 = st.columns([3, 2])
     with c3:
         st.altair_chart(
             owid.raster(grid_valued, "value_eur_m2", legend_title="€/m²",
-                        points=sp.KNOWN_SITES),
-            width="content", key="dev_value")
+                        points=city.sites()),
+            width="content", key=f"dev_value_{city.key}")
     with c4:
         st.markdown("**Coefficients**")
         st.dataframe(
@@ -465,10 +563,11 @@ def page_development() -> None:
 # =====================================================================
 
 def page_simulation() -> None:
-    frame, series = _population()
+    city = _city()
+    frame, series = _population(city.name)
     header(
         "11 · Simulation",
-        "Simulating growth to 2050",
+        f"Simulating {city.name}'s growth to 2050",
         "Each year, the extra people are split between filling in areas already built on and "
         "building on new land. Where the new building goes follows the map from the previous "
         "section, and protected land is off the table. This is an old and well-known method "
@@ -479,7 +578,7 @@ def page_simulation() -> None:
     )
     data_badge(SYNTHETIC_GRID)
 
-    grid = _grid()
+    grid = _grid(city.name)
 
     with st.sidebar:
         st.markdown("#### Simulation")
@@ -504,10 +603,16 @@ def page_simulation() -> None:
         fit.forecast[["year", "population"]],
     ], ignore_index=True)
 
+    # The cell size comes from the city, not from the default. Cape Town's grid
+    # is 800 m cells against Enschede's 200 m, and a simulation that assumed
+    # 200 m would under-report converted land by a factor of sixteen.
+    spacing = city.geometry.spacing_km
     with_constraints = sp.simulate(
-        dev.grid, path, densification, True, station_pull, persons_per_ha)
+        dev.grid, path, densification, True, station_pull, persons_per_ha,
+        spacing_km=spacing)
     without = sp.simulate(
-        dev.grid, path, densification, False, station_pull, persons_per_ha)
+        dev.grid, path, densification, False, station_pull, persons_per_ha,
+        spacing_km=spacing)
 
     final = with_constraints.yearly.iloc[-1]
     start = with_constraints.yearly.iloc[0]
@@ -608,7 +713,7 @@ def page_simulation() -> None:
         "per cent instead of 80, and for pricing a constraint in hectares."
     )
     note(
-        "**Is not:** a prediction of Enschede in 2050. The grid is synthetic, the labels were "
+        f"**Is not:** a prediction of {city.name} in 2050. The grid is synthetic, the labels were "
         "generated from the features, the population path comes from a model that admits it "
         "cannot distinguish between plausible futures, and the rule contains no land market, no "
         "developer behaviour, no planning consent process and no feedback from prices to demand. "

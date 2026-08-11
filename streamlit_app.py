@@ -47,6 +47,7 @@ from urban.pages import (  # noqa: E402
     page_projection, page_simulation,
 )
 from urban.pages_behaviour import page_behaviour, page_scaling  # noqa: E402
+from urban.pages_simulator import page_simulator  # noqa: E402
 from urban import chrome, geo  # noqa: E402
 
 
@@ -1912,8 +1913,11 @@ PARTS: dict[str, dict[str, object]] = {
         "4.5 How households choose": lambda: page_behaviour(),
         "4.6 Making it fast enough to use": lambda: page_scaling(),
     },
-    "5 · Sources": {
-        "5.1 Where the numbers come from": lambda: page_method(),
+    "5 · Simulate it yourself": {
+        "5.1 Run two futures against each other": lambda: page_simulator(),
+    },
+    "6 · Sources": {
+        "6.1 Where the numbers come from": lambda: page_method(),
     },
 }
 
@@ -1922,9 +1926,11 @@ PART_BLURB = {
     "2 · Cape Town": "Almost no land left — and the land that is left is the wrong land.",
     "3 · Enschede": "Plenty of land and still cannot build. Six things in the way.",
     "4 · Machine learning": "Forecasting models, a development classifier, a growth "
-                          "simulation, and households that choose — each with its controls "
-                          "and its scores on screen.",
-    "5 · Sources": "Every number, where it came from, and what this gets wrong.",
+                          "simulation, and households that choose. Pick either city in the "
+                          "sidebar — every model runs on both.",
+    "5 · Simulate it yourself": "A workbench: set two futures side by side and read the "
+                               "difference in land, density and driving.",
+    "6 · Sources": "Every number, where it came from, and what this gets wrong.",
 }
 
 

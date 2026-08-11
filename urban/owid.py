@@ -367,24 +367,48 @@ def land_split_bar(df: pd.DataFrame, total_km2: float) -> alt.Chart:
     reader can compare lengths far more accurately than angles.
     """
     order = df.sort_values("order")["part"].tolist()
-    # A constant band on y. A bar with only an x encoding has no vertical
-    # extent to draw into and renders as nothing at all.
-    plotted = df.assign(row="")
+
+    # Labels on the segments, not in a legend. A legend above a single stacked
+    # bar makes the reader carry three colours down to three blocks that are
+    # already big enough to write on — and it was being clipped in half by the
+    # chart's own height. Direct labelling removes the legend, the clipping and
+    # the lookup in one move.
+    plotted = df.sort_values("order").assign(row="")
+    plotted["end"] = plotted["km2"].cumsum()
+    plotted["mid"] = plotted["end"] - plotted["km2"] / 2
+    plotted["share"] = plotted["km2"] / plotted["km2"].sum()
+    plotted["value_label"] = [f"{v:,.0f} km²" for v in plotted["km2"]]
+    plotted["share_label"] = [f"{s:.0%}" for s in plotted["share"]]
+
+    bar = alt.Chart(plotted).mark_bar(
+        stroke=SURFACE, strokeWidth=2, cornerRadiusEnd=4, height=54).encode(
+        y=alt.Y("row:N", title=None, axis=None),
+        x=alt.X("km2:Q", stack="zero",
+                title=f"km² of Cape Town's {total_km2:,.0f} km²",
+                # The axis is only there for scale. Its last tick used to sit
+                # past the right edge of the container and get cut in half.
+                axis=alt.Axis(format="~s", grid=True, gridColor=GRID,
+                              values=[0, 500, 1000, 1500, 2000])),
+        color=alt.Color("part:N", sort=order,
+                        scale=alt.Scale(domain=order,
+                                        range=[SERIES[2], SERIES[0], INK_3]),
+                        legend=None),
+        order=alt.Order("order:Q"),
+        tooltip=["part", alt.Tooltip("km2:Q", format=","), "detail"],
+    )
+
+    def _text(field: str, dy: int, size: int, weight: str, opacity: float):
+        return alt.Chart(plotted).mark_text(
+            align="center", baseline="middle", dy=dy, fontSize=size,
+            fontWeight=weight, color=SURFACE, opacity=opacity).encode(
+            y=alt.Y("row:N", axis=None), x=alt.X("mid:Q"), text=f"{field}:N")
+
+    # Three lines inside each block: what it is, how big, what share.
+    name = _text("part", -15, 11, "bold", 1.0)
+    value = _text("value_label", 1, 12, "normal", 0.95)
+    share = _text("share_label", 17, 11, "normal", 0.75)
+
     return style(
-        alt.Chart(plotted)
-        .mark_bar(stroke=SURFACE, strokeWidth=2, cornerRadiusEnd=4, height=46)
-        .encode(
-            y=alt.Y("row:N", title=None, axis=None),
-            x=alt.X("km2:Q", stack="zero",
-                    title=f"km² of Cape Town's {total_km2:,.0f} km²",
-                    axis=alt.Axis(format="~s", grid=True, gridColor=GRID,
-                                  values=[0, 500, 1000, 1500, 2000, 2500])),
-            color=alt.Color("part:N", sort=order,
-                            scale=alt.Scale(domain=order,
-                                            range=[SERIES[2], SERIES[0], INK_3]),
-                            legend=alt.Legend(orient="top")),
-            order=alt.Order("order:Q"),
-            tooltip=["part", alt.Tooltip("km2:Q", format=","), "detail"],
-        )
-        .properties(height=110)
+        alt.layer(bar, name, value, share)
+        .properties(height=120, padding={"right": 14, "top": 4})
     )

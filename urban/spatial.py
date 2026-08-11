@@ -80,39 +80,98 @@ KNOWN_SITES = pd.DataFrame([
 ])
 
 
+# The same, for Cape Town. Coordinates are kilometres from the Foreshore, east
+# and north, and are approximate to within a kilometre or so — enough to give
+# the modelled surface something recognisable to be read against, and nowhere
+# near enough to be a development register. Programme and status are not
+# verified for any of them.
+KNOWN_SITES_CAPE_TOWN = pd.DataFrame([
+    {"name": "CBD and Foreshore", "kind": "Employment", "x": 0.0, "y": 0.0,
+     "label_dx": 0.0, "label_dy": -1.8, "label_align": "left",
+     "note": "The central business district, wedged between the mountain and Table Bay."},
+    {"name": "V&A Waterfront", "kind": "Retail", "x": 0.6, "y": 2.2,
+     "label_dx": 0.0, "label_dy": 1.6, "label_align": "left",
+     "note": "The most visited destination in the country, on reclaimed dock land."},
+    {"name": "Century City", "kind": "Retail", "x": 8.0, "y": 6.0,
+     "label_dx": 0.0, "label_dy": 1.6, "label_align": "left",
+     "note": "Canal Walk and the surrounding edge-city office park — a mall-anchored node "
+             "built where the land was cheap and the freeway already ran."},
+    {"name": "Bellville / Tygervalley", "kind": "Employment", "x": 18.0, "y": 8.0,
+     "label_dx": 0.0, "label_dy": 1.6, "label_align": "right",
+     "note": "The northern suburbs' own centre, and the second focus of the metro."},
+    {"name": "Cape Town International", "kind": "Infrastructure", "x": 13.0, "y": -1.0,
+     "label_dx": 0.0, "label_dy": -1.8, "label_align": "left",
+     "note": "The airport, with the height and noise restrictions that come with it."},
+    {"name": "Khayelitsha", "kind": "Housing", "x": 23.0, "y": -7.0,
+     "label_dx": 0.0, "label_dy": 1.6, "label_align": "right",
+     "note": "Established under apartheid-era removals, far from the jobs — the single "
+             "clearest illustration of why this city's density is in the wrong places."},
+    {"name": "Mitchells Plain", "kind": "Housing", "x": 19.0, "y": -11.0,
+     "label_dx": 0.0, "label_dy": -1.8, "label_align": "right",
+     "note": "The other large planned township of the same period, and the same problem."},
+    {"name": "Philippi Horticultural Area", "kind": "Agriculture", "x": 15.0, "y": -7.0,
+     "label_dx": 0.0, "label_dy": 1.6, "label_align": "left",
+     "note": "Farmland over the aquifer, inside the urban edge and under permanent "
+             "development pressure — the contested land in the water section."},
+])
+
+
 # ---------------------------------------------------------------------
 # Cell features
 # ---------------------------------------------------------------------
 
-def build_grid(spacing_km: float = 0.2, extent_km: float = 6.5) -> pd.DataFrame:
+def build_grid(spacing_km: float | None = None, extent_km: float | None = None,
+               geometry=None) -> pd.DataFrame:
     """A feature table, one row per cell.
 
     Features are the ones an urban economist would reach for first — distance
     to the centre, distance to the nearest station, existing density — plus the
     constraint mask that the rest of this platform is about. The mask matters:
     a model without it will happily allocate housing to a raised bog.
+
+    `geometry` is a `cities.Geometry`. It defaults to Enschede's so existing
+    callers keep working, but the point of it is that Cape Town gets the same
+    analysis rather than a different one: a mountain and a coastline are the
+    same two kinds of mask as a bog and a border, at ten times the scale.
     """
+    if geometry is None:
+        from .cities import ENSCHEDE
+        geometry = ENSCHEDE.geometry
+    spacing_km = geometry.spacing_km if spacing_km is None else spacing_km
+    extent_km = geometry.extent_km if extent_km is None else extent_km
+
     axis = np.arange(-extent_km, extent_km + spacing_km, spacing_km)
     xx, yy = np.meshgrid(axis, axis)
     x, y = xx.ravel(), yy.ravel()
 
     d_centre = np.hypot(x, y)
     d_station = np.min(
-        np.stack([np.hypot(x - sx, y - sy) for sx, sy in STATIONS]), axis=0
+        np.stack([np.hypot(x - sx, y - sy) for sx, sy in geometry.stations]), axis=0
     )
 
     # Existing built density, as the same exponential gradient the access
     # section uses, normalised to [0, 1].
-    density = np.exp(-0.35 * d_centre)
+    density = np.exp(-geometry.density_decay * d_centre)
     density = density / density.max()
 
-    # Constraint mask. Two things are withheld: the protected habitat on the
-    # south-eastern edge standing in for Aamsveen, and everything beyond the
-    # national border.
-    d_bog = np.hypot(x - 4.2, y + 3.0)
-    protected = d_bog < 1.8
-    beyond_border = x > BORDER_X_KM
-    outside_edge = d_centre > CITY_RADIUS_KM + 1.6
+    # Constraint mask. Two kinds of thing are withheld: a protected mass, and
+    # everything past a hard edge. In Enschede that is the Aamsveen bog and the
+    # German border; in Cape Town, Table Mountain and the Atlantic.
+    if geometry.protected_centre is not None:
+        px, py = geometry.protected_centre
+        protected = np.hypot(x - px, y - py) < geometry.protected_radius_km
+    else:
+        protected = np.zeros_like(x, dtype=bool)
+
+    if geometry.hard_edge_x is None:
+        beyond_border = np.zeros_like(x, dtype=bool)
+    elif geometry.hard_edge_x >= 0:
+        beyond_border = x > geometry.hard_edge_x
+    else:
+        # A negative edge means the barrier is to the west, not the east.
+        beyond_border = x < geometry.hard_edge_x
+
+    outside_edge = d_centre > geometry.radius_km + geometry.edge_margin_km
 
     return pd.DataFrame({
         "x": x, "y": y,
@@ -123,7 +182,7 @@ def build_grid(spacing_km: float = 0.2, extent_km: float = 6.5) -> pd.DataFrame:
         "beyond_border": beyond_border,
         "outside_edge": outside_edge,
         "developable": ~(protected | beyond_border),
-        "built": d_centre <= CITY_RADIUS_KM,
+        "built": d_centre <= geometry.radius_km,
     })
 
 
@@ -255,10 +314,12 @@ VALUE_COEFFICIENTS = {
 }
 
 
-def value_surface(grid: pd.DataFrame, coefficients: dict | None = None) -> pd.Series:
+def value_surface(grid: pd.DataFrame, coefficients: dict | None = None,
+                  radius_km: float | None = None) -> pd.Series:
     """Price per square metre implied by accessibility and density."""
     c = {**VALUE_COEFFICIENTS, **(coefficients or {})}
-    green_adjacency = np.clip((grid["d_centre"] - CITY_RADIUS_KM + 1.2) / 1.2, 0, 1)
+    radius_km = CITY_RADIUS_KM if radius_km is None else radius_km
+    green_adjacency = np.clip((grid["d_centre"] - radius_km + 1.2) / 1.2, 0, 1)
     log_value = (
         np.log(c["base_eur_m2"])
         + c["centre_decay_per_km"] * grid["d_centre"]
