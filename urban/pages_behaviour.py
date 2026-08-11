@@ -251,21 +251,96 @@ def page_behaviour() -> None:
     st.divider()
 
     # ---- 5. connect to nitrogen -------------------------------------
-    st.subheader("What this does to the number that actually blocks building")
-    nox = table[["Scenario", "NOx kg per household", "Car km per household"]].copy()
-    nox["NOx g per household per year"] = nox["NOx kg per household"] * 1000
-    st.dataframe(
-        nox[["Scenario", "Car km per household", "NOx g per household per year"]]
-        .round({"Car km per household": 0, "NOx g per household per year": 0}),
-        hide_index=True, width="stretch")
+    # Deferred so the package does not import the app module at load time —
+    # the app imports this module, and the constants belong to the nitrogen
+    # section. Restating them here would be two definitions that drift.
+    import streamlit_app as app
+
+    figure(
+        "12.5",
+        "None of it gets a dwelling to zero, and zero is the test",
+        "Lifetime nitrogen from one dwelling under each policy. The bar spans two ways of "
+        "attributing the model's effect to total driving; the true answer is inside it.",
+        reads_as="The dashed line is a dwelling today, at 130 kg over fifty years. Even the "
+                 "most generous reading of the strongest policy leaves about 23 kg, because "
+                 "10 kg of it is the machinery that builds the house and the rest is the "
+                 "driving that survives. The legal threshold is zero, so none of these bars "
+                 "passes the test — they change how expensive the problem is, not whether "
+                 "it exists.",
+    )
+
+    commute_share = float(table.iloc[0]["Car km per household"]) / app.CAR_KM_PER_DWELLING_YEAR
+    rows = []
+    for _, r in table.iterrows():
+        cut = -r["vs today"]                       # positive = less driving
+        # Lower bound: the policy only ever touches commuting, which this model
+        # puts at ~6% of a dwelling's driving. Upper bound: the same
+        # proportional response applies to every car trip.
+        for label, scale in (
+            ("If it only changes commuting", 1 - cut * commute_share),
+            ("If it changes all car travel", 1 - cut),
+        ):
+            rows.append({
+                "Scenario": r["Scenario"],
+                "bound": label,
+                "kg": app.lifetime_nox_kg(car_scale=max(scale, 0.0)),
+            })
+    nox = pd.DataFrame(rows)
+    order = list(table.sort_values("vs today")["Scenario"])
+
+    span = (
+        alt.Chart(nox)
+        .mark_line(strokeWidth=7, strokeCap="round", opacity=0.28, color=SERIES[0])
+        .encode(
+            y=alt.Y("Scenario:N", sort=order, title=None),
+            x=alt.X("kg:Q", title="Lifetime nitrogen per dwelling, kg NOx",
+                    scale=alt.Scale(zero=True),
+                    axis=alt.Axis(format=",.0f", grid=True, gridColor=GRID)),
+            detail="Scenario:N",
+        )
+    )
+    dots = (
+        alt.Chart(nox)
+        .mark_point(filled=True, size=95, stroke=SURFACE, strokeWidth=1.5)
+        .encode(
+            y=alt.Y("Scenario:N", sort=order),
+            x="kg:Q",
+            color=alt.Color(
+                "bound:N",
+                scale=alt.Scale(domain=["If it only changes commuting",
+                                        "If it changes all car travel"],
+                                range=[SERIES[1], SERIES[2]]),
+                legend=alt.Legend(orient="top", columns=2)),
+            tooltip=["Scenario", "bound", alt.Tooltip("kg:Q", format=",.1f")],
+        )
+    )
+    today = (
+        alt.Chart(pd.DataFrame({"x": [app.lifetime_nox_kg()]}))
+        .mark_rule(strokeDash=[4, 3], strokeWidth=1, color=INK_3).encode(x="x:Q")
+    )
+    st.altair_chart(style(alt.layer(span, dots, today).properties(height=230)),
+                    use_container_width=True, key="beh_nitrogen")
+    provenance("synthetic",
+               "Policy response from the model above; nitrogen account and the 12,000 "
+               "vehicle-km per dwelling from the nitrogen section.")
+    values_table(nox.pivot(index="Scenario", columns="bound", values="kg").round(1).reset_index())
+
     note(
-        "These are **commuting kilometres only** — roughly 700 a year per household, against "
-        "the 12,000 vehicle-kilometres per dwelling the nitrogen section uses for all trips of "
-        "all kinds. Commuting is about six per cent of the total, so the absolute NOx figures "
-        "here are small by construction. The percentages are the transferable part: a policy "
-        "that cuts commuting car-kilometres by 83 per cent does not cut total driving by 83 "
-        "per cent, but it is the only lever in this project that moves the nitrogen number at "
-        "all rather than moving where the building goes."
+        f"**Why a range and not a number.** This model only sees commuting inside the city, "
+        f"and it puts that at {commute_share:.0%} of a dwelling's driving. If a parking charge "
+        f"changed nothing else, the nitrogen effect would be the small end of each bar. It "
+        f"plainly changes more than that — a charge in the centre reaches shopping and leisure "
+        f"trips too — but it reaches none of the driving to out-of-town retail, and it misses "
+        f"the commutes that leave Enschede altogether, which are exactly the long ones this "
+        f"ring model has no representation of. The honest position is that the answer is "
+        f"inside the bar and this model cannot say where. A travel survey would settle it."
+    )
+    note(
+        "**What survives the uncertainty.** The ordering. Pricing parking beats the other two "
+        "levers under either assumption, and cheaper motoring makes things worse under either. "
+        "That is enough to rank policies, which is what the ranking is for — and it is more "
+        "than the growth simulation in the previous section can do, because that one has no "
+        "prices in it at all."
     )
 
     st.divider()
