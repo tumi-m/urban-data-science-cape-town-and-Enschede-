@@ -426,17 +426,61 @@ def page_projection() -> None:
 # 10 · Development
 # =====================================================================
 
+def _mask_map(city) -> None:
+    """One city's constraint mask, drawn at that city's own extent."""
+    g = _grid(city.name)
+    g = g.assign(state=np.where(~g["developable"], "Withheld", "Available"))
+    e = city.geometry.extent_km
+    chart = (
+        alt.Chart(g)
+        .mark_square(size=max(6, int(1900 / e)))
+        .encode(
+            x=alt.X("x:Q", title=None, scale=alt.Scale(domain=[-e, e]),
+                    axis=alt.Axis(grid=False, labels=False, ticks=False)),
+            y=alt.Y("y:Q", title=None, scale=alt.Scale(domain=[-e, e]),
+                    axis=alt.Axis(grid=False, labels=False, ticks=False)),
+            color=alt.Color("state:N",
+                            scale=alt.Scale(domain=["Available", "Withheld"],
+                                            range=["#d8d5cd", SERIES[1]]),
+                            legend=alt.Legend(orient="bottom", title=None)),
+            tooltip=["state"],
+        )
+        .properties(width=300, height=300)
+    )
+    st.altair_chart(style(chart), width="content", key=f"mask_{city.key}")
+    withheld = 1 - g["developable"].mean()
+    st.caption(f"{withheld:.0%} of the modelled frame is withheld · "
+               f"{e * 2:.0f} × {e * 2:.0f} km")
+
+
 def page_development() -> None:
-    city = _city()
     header(
-        "10 · Development",
-        f"Predicting where building happens in {city.name}",
+        "05.1 · Development",
+        "Predicting where building happens",
         "Two models. One predicts which areas get built on, using how reachable they are, how "
         "dense they already are, and which land is off-limits. The other estimates what land is "
         "worth. Both run on made-up data, and this page keeps saying so, because a map of where "
         "building will happen is the most convincing-looking thing in this whole project and it "
         "has not earned that.",
     )
+    city = _city("dev_city")
+
+    # The two constraint masks, side by side, before any model runs. This is
+    # the report's thesis as geometry: a bog and a border against a mountain
+    # and an ocean, and the fact that both cities' models are looking at the
+    # same *kind* of picture is the reason they can be compared at all.
+    figure("01", "What each model is allowed to build on",
+           "Grey is available. Orange is withheld by a constraint. Both cities, at their own "
+           "scales — Cape Town's frame is four times wider.",
+           "Cape Town loses a large connected mass to the mountain and the coast, and what "
+           "survives is a ring. Enschede loses a small bite to the bog and a straight edge to "
+           "the border, and what survives looks generous — which is the trap, because the "
+           "constraint that actually stops Enschede building does not appear on this map at "
+           "all. Nitrogen has no shape.")
+    compare.facet_rasters(_mask_map, list(cities.CITIES.values()))
+    provenance("synthetic", "Constraint masks from the geometry in urban/cities.py.")
+
+    st.divider()
     data_badge(SYNTHETIC_GRID)
 
     grid = _grid(city.name)
@@ -481,7 +525,7 @@ def page_development() -> None:
     st.divider()
     c1, c2 = st.columns([3, 2])
     with c1:
-        figure("01", "How likely each area is to be built on",
+        figure("02", "How likely each area is to be built on",
                "Darker blue means the model thinks building is more likely there.",
                "The hole in the surface is protected land and the straight edge is the hard "
                "boundary — the German border for Enschede, the Atlantic for Cape Town. Both are "
@@ -496,7 +540,7 @@ def page_development() -> None:
             f"recognisable to be read against, not as a development register."
         )
     with c2:
-        figure("02", "What the model uses to decide",
+        figure("03", "What the model uses to decide",
                "How much each input matters.",
                "For the logistic model these are directional — negative means it pushes "
                "building away. For the two tree models they only show how much an input gets "
@@ -539,7 +583,7 @@ def page_development() -> None:
         )
 
     st.divider()
-    figure("03", "What land is worth, by location",
+    figure("04", "What land is worth, by location",
            "Estimated price per square metre.",
            "Four things drive it: how far to the centre, how far to a station, how dense the "
            "area already is, and whether open space is next door. This is a made-up surface "
