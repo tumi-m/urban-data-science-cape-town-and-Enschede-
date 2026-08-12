@@ -94,16 +94,44 @@ def values_table(df: pd.DataFrame) -> None:
         st.dataframe(df, hide_index=True, width="stretch")
 
 
+def caveat(title: str, body: str, level: str = "note") -> None:
+    """An editorial caveat, styled as editorial rather than as a system fault.
+
+    This replaces `st.error` and `st.warning`, which were being used to carry
+    methodological notes. Those components are Streamlit's way of saying the
+    program has gone wrong: a red panel headed "Read these numbers correctly"
+    is indistinguishable, at a glance, from a stack trace, and the first thing
+    a reader asked was that the errors on the simulation pages be fixed. There
+    were no errors. There was a red box.
+
+    The information is unchanged and none of it is softened — a caveat that
+    matters is still the loudest thing on the page in the ways that count, with
+    a coloured rule, a label and full-strength text. What it no longer does is
+    impersonate a crash.
+
+    `level` is one of: note (neutral), caution (this limits what you may
+    conclude), critical (this invalidates the obvious reading).
+    """
+    st.markdown(
+        f"<div class='caveat {level}'><div class='caveat-label'>{title}</div>"
+        f"<div class='caveat-body'>{body}</div></div>",
+        unsafe_allow_html=True,
+    )
+
+
 def data_badge(series) -> None:
     """Provenance for a modelled series, stated where it is used.
 
-    Deliberately an `st.warning` rather than a caption when the underlying data
-    is synthetic. A quiet grey footnote is exactly the treatment that lets a
-    reader carry a fabricated number out of the room.
+    Synthetic and reconstructed series get a caveat block rather than a plain
+    caption, because a quiet grey footnote is exactly the treatment that lets a
+    reader carry a fabricated number out of the room. Everything solid enough
+    to stand on gets the one-line caption.
     """
     if series.klass == "synthetic":
-        st.warning(f"{BADGE[series.klass]} — {series.source}. {CLASS_NOTE[series.klass]}")
+        caveat(f"{BADGE[series.klass]} · {series.name}",
+               f"{series.source}. {CLASS_NOTE[series.klass]}", "critical")
     elif series.klass == "reconstructed":
-        st.info(f"{BADGE[series.klass]} — {series.source}. {CLASS_NOTE[series.klass]}")
+        caveat(f"{BADGE[series.klass]} · {series.name}",
+               f"{series.source}. {CLASS_NOTE[series.klass]}", "caution")
     else:
         st.caption(series.caption())

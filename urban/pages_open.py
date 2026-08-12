@@ -154,8 +154,8 @@ def page_opening() -> None:
          "Question": "How many people are coming, and how much do the models disagree?",
          "Cities": "Both"},
         {"Section": "5 · Where building goes",
-         "Question": "Which land gets developed, what it is worth, and what the constraint "
-                     "costs in hectares.",
+         "Question": "Which land gets developed, what it is worth, and where the constraint "
+                     "pushes it.",
          "Cities": "Both"},
         {"Section": "6 · How people travel",
          "Question": "What households choose when prices change, and what that does to the "

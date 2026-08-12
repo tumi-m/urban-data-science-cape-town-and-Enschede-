@@ -21,7 +21,7 @@ from . import behaviour as bh
 from . import owid
 from . import society as so
 from .theme import GRID, INK, INK_2, INK_3, SERIES, SURFACE, style
-from .ui import figure, header, note, provenance, stats, values_table
+from .ui import caveat, figure, header, note, provenance, stats, values_table
 
 # The population every scenario is run on. Big enough that the shares are
 # stable to the third decimal, small enough that six scenarios finish inside a
@@ -102,13 +102,14 @@ def page_behaviour() -> None:
         "thing actually blocking construction.",
     )
 
-    st.info(
-        "**Made-up households.** The incomes, the rents and the behavioural numbers are "
-        "typical values from the travel-choice literature, not measurements of Enschede. "
-        "The *direction* and rough size of each response is worth something. The levels "
-        "are not. Fitting this on the Dutch national travel survey (ODiN) and the property "
-        "register would make the same code produce real numbers."
-    )
+    caveat(
+        "Made-up households",
+        "The incomes, the rents and the behavioural numbers are typical values from the "
+        "travel-choice literature, not measurements of Enschede. The <em>direction</em> and "
+        "rough size of each response is worth something. The levels are not. Fitting this on "
+        "the Dutch national travel survey (ODiN) and the property register would make the same "
+        "code produce real numbers.",
+        "critical")
 
     table, rings, modes = _scenarios()
 
@@ -377,13 +378,13 @@ def page_scaling() -> None:
         "In that order, because that is the order the work actually happened in.",
     )
 
-    st.info(
-        "**No language model is involved.** The paper's expensive step is an LLM giving each "
-        "agent opinions and conversations. The expensive step here is a discrete-choice model — "
-        "far narrower and far cheaper. What has been borrowed is the structure: break the "
-        "simulation into named operations, and distil-then-scale. Calling this an LLM agent "
-        "society would be false."
-    )
+    caveat(
+        "No language model is involved",
+        "The paper's expensive step is an LLM giving each agent opinions and conversations. "
+        "The expensive step here is a discrete-choice model — far narrower and far cheaper. "
+        "What has been borrowed is the structure: break the simulation into named operations, "
+        "and distil-then-scale. Calling this an LLM agent society would be false.",
+        "note")
 
     narrow, wide, grid = _surrogates()
     scal = _scaling()
@@ -419,14 +420,15 @@ def page_scaling() -> None:
     ])
     st.dataframe(steps, hide_index=True, width="stretch")
 
-    st.warning(
-        "**The first version of this page claimed the surrogate was 275 times faster than the "
-        "full model.** It was — against a full model that spent 99 per cent of its time in a "
-        "Python loop it did not need. Fixing that removed almost the whole margin. The number "
-        "measured the code, not the method, and it is left on the page rather than quietly "
-        "corrected because it is the most useful thing in this section: **make the exact model "
-        "fast before you approximate it.**"
-    )
+    caveat(
+        "A number this page used to report, and why it was wrong",
+        "The first version claimed the surrogate was 275 times faster than the full model. It "
+        "was — against a full model that spent 99 per cent of its time in a Python loop it did "
+        "not need. Fixing that removed almost the whole margin. The number measured the code, "
+        "not the method, and it is left on the page rather than quietly corrected because it "
+        "is the most useful thing in this section: <strong>make the exact model fast before "
+        "you approximate it.</strong>",
+        "caution")
 
     st.divider()
 

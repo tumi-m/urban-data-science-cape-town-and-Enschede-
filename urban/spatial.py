@@ -171,7 +171,43 @@ def build_grid(spacing_km: float | None = None, extent_km: float | None = None,
         # A negative edge means the barrier is to the west, not the east.
         beyond_border = x < geometry.hard_edge_x
 
-    outside_edge = d_centre > geometry.radius_km + geometry.edge_margin_km
+    # What is already built. Two things were wrong with the previous version,
+    # `d_centre <= radius`, and together they silently disabled the constraint
+    # toggle that half this report is about.
+    #
+    # First, a protected mass sitting inside the disc was counted as built-up.
+    # Table Mountain is 6 km from the Cape Town CBD and the built radius is
+    # 17 km, so the entire national park was marked "already built" — and since
+    # greenfield conversion skips built cells, the protected land was never a
+    # candidate for development whether the constraints were on or off. Running
+    # with constraints disabled therefore produced *identical* output, and the
+    # workbench's claim to price the constraint in hectares was empty.
+    #
+    # Second, the radius was set by hand to make the built area come out near
+    # the right figure, and the two numbers then drifted apart from the land
+    # ledger. The radius is now solved so the built area matches the ledger's
+    # "already built on" row exactly, which keeps the grid and the arithmetic in
+    # section 2 telling the same story.
+    cell_km2 = spacing_km ** 2
+    eligible = ~(protected | beyond_border)
+
+    def _built_at(r: float) -> np.ndarray:
+        return (d_centre <= r) & eligible
+
+    radius = geometry.radius_km
+    target = geometry.built_km2
+    if target:
+        lo, hi = 0.0, extent_km * 1.5
+        for _ in range(60):
+            mid = (lo + hi) / 2
+            if _built_at(mid).sum() * cell_km2 < target:
+                lo = mid
+            else:
+                hi = mid
+        radius = (lo + hi) / 2
+
+    built = _built_at(radius)
+    outside_edge = d_centre > radius + geometry.edge_margin_km
 
     return pd.DataFrame({
         "x": x, "y": y,
@@ -181,8 +217,8 @@ def build_grid(spacing_km: float | None = None, extent_km: float | None = None,
         "protected": protected,
         "beyond_border": beyond_border,
         "outside_edge": outside_edge,
-        "developable": ~(protected | beyond_border),
-        "built": d_centre <= geometry.radius_km,
+        "developable": eligible,
+        "built": built,
     })
 
 
@@ -200,15 +236,33 @@ def synthesise_labels(grid: pd.DataFrame, seed: int = 0) -> pd.Series:
     perfectly separable and the metrics mean something.
     """
     rng = np.random.default_rng(seed)
-    logit = (
-        2.4
-        - 0.55 * grid["d_centre"]
-        - 0.42 * grid["d_station"]
-        + 1.9 * grid["density"]
-    )
-    probability = 1 / (1 + np.exp(-logit))
-    probability = probability.where(grid["developable"], 0.0)
+    probability = development_potential(grid).where(grid["developable"], 0.0)
     return (rng.random(len(grid)) < probability).astype(int)
+
+
+def development_potential(grid: pd.DataFrame) -> pd.Series:
+    """The generative probability, before any constraint is applied.
+
+    Distances enter **relative to the size of the city**, not in absolute
+    kilometres. The original coefficients were fitted by eye to Enschede, where
+    the frame is 13 km across, and applying them to Cape Town — 52 km across —
+    put every unbuilt cell at 0.55 × 24 km of negative logit. The result was a
+    development surface that was uniformly zero to four decimal places: the
+    classifier trained on it learned that nothing is ever built anywhere, the
+    allocation order became arbitrary, and the Cape Town map was blank. Scaling
+    by the frame makes the same stated process mean the same thing in a city of
+    any size.
+
+    Returned separately from the labels because the simulation needs both: the
+    masked version for a run that respects the constraints, and this one for a
+    run that does not. Without it, "ignore the constraints" changed nothing at
+    all — the mask was already baked into the learned probability, so the
+    protected land stayed unattractive whether it was protected or not.
+    """
+    dc = grid["d_centre"] / max(float(grid["d_centre"].max()), 1e-9)
+    ds = grid["d_station"] / max(float(grid["d_station"].max()), 1e-9)
+    logit = 2.4 - 3.6 * dc - 2.2 * ds + 1.9 * grid["density"]
+    return 1 / (1 + np.exp(-logit))
 
 
 # ---------------------------------------------------------------------
@@ -282,6 +336,11 @@ def fit_development(grid: pd.DataFrame, kind: str = "gbm", params: dict | None =
     out = grid.copy()
     out["p_develop"] = model.predict_proba(X)[:, 1]
     out.loc[~out["developable"], "p_develop"] = 0.0
+    # The counterfactual surface: what the same process says about this land
+    # with the prohibition lifted. Carried alongside so a simulation run with
+    # the constraints disabled has something to rank by that is not already
+    # shaped by the constraint.
+    out["p_potential"] = development_potential(grid).to_numpy()
     out["label"] = y
 
     if hasattr(model, "feature_importances_"):
@@ -379,11 +438,32 @@ def simulate(
     state["converted"] = False
     state["added_people"] = 0.0
 
-    weight = state["p_develop"].to_numpy(dtype=float).copy()
+    # Which surface the allocator ranks by. With the constraints on, it is the
+    # model's fitted probability — which learned from labels in which protected
+    # land never develops. With them off, that surface is the wrong one to use:
+    # the prohibition is already baked into it, so lifting the prohibition
+    # would change nothing, and for several versions of this page it did change
+    # nothing. The unmasked generative potential is the honest counterfactual —
+    # the same stated process with the prohibition removed.
+    if respect_constraints or "p_potential" not in state:
+        weight = state["p_develop"].to_numpy(dtype=float).copy()
+    else:
+        weight = state["p_potential"].to_numpy(dtype=float).copy()
+
     if station_weighting != 1.0:
         weight = weight * np.exp(-station_weighting * 0.25 * state["d_station"].to_numpy())
     if respect_constraints:
         weight = np.where(state["developable"].to_numpy(), weight, 0.0)
+
+    # Greenfield conversion happens on land that is NOT already built. Without
+    # this line the allocation queue is led by the cells with the highest
+    # development probability, which are the central ones — and those are
+    # already built, so every "conversion" landed on a cell that was already
+    # counted. The built-up area then never moved, and every land figure in the
+    # simulation and the workbench reported exactly 0.0 km² converted no matter
+    # what the levers said. Densification is handled separately below and is
+    # the thing that *is* supposed to land on built cells.
+    weight = np.where(state["built"].to_numpy(), 0.0, weight)
 
     order = np.argsort(-weight)
     order = order[weight[order] > 0]

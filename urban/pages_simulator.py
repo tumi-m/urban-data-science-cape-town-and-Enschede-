@@ -19,7 +19,8 @@ same decision:
   - **Where they go** — densification versus conversion, station weighting, and
     the density new development is built at.
   - **Whether the constraints hold** — the protected mass and the hard edge, on
-    or off. This is the one that prices the constraint in hectares.
+    or off. This one does not change how much land gets built on; it changes
+    *where*. That turns out to be the whole finding.
   - **How they travel** — the parking, transit and e-bike levers from the
     behavioural section, which feed car-kilometres and therefore the nitrogen
     account that the Enschede sections show is what actually blocks building.
@@ -37,11 +38,12 @@ import streamlit as st
 from . import animate
 from . import behaviour as bh
 from . import cities
+from . import compare
 from . import owid
 from . import spatial as sp
 from .forecast import MODELS, fit_and_forecast
 from .theme import GRID, INK, INK_2, INK_3, SEQUENTIAL, SERIES, SURFACE, style
-from .ui import figure, header, note, provenance, stats, values_table
+from .ui import caveat, figure, header, note, provenance, stats, values_table
 
 
 @dataclass
@@ -108,8 +110,8 @@ def _controls(side: str, default_preset: str, city) -> Levers:
                            value=bool(p["respect_constraints"]),
                            key=f"sim_{side}_keep",
                            help="Off means the protected mass and the hard edge are "
-                                "available for building. The difference is the price "
-                                "of the constraint, in hectares.")
+                                "available for building. The land converted barely "
+                                "moves; what moves is how far out it sits.")
         st.caption("Travel policy")
         parking = st.slider("Parking charge, € per car trip", 0.0, 8.0,
                             float(p["parking"]), 0.25, key=f"sim_{side}_park")
@@ -152,35 +154,41 @@ def _run(city_name: str, lev_dict: dict):
                          spacing_km=city.geometry.spacing_km)
 
     outcome = bh.simulate(lev.policy(), n_households=1500)
+
+    # How far out the new building sits. This is the measure the constraint
+    # actually moves — the quantity of land converted is set by how many people
+    # need housing, not by what is protected.
+    final = result.frames[max(result.frames)]
+    conv = final[final["converted"]]
     return result.yearly, result.frames, {
         "car_km": outcome.mean_car_km,
         "car_share": float(outcome.modes.set_index("mode").loc["Car", "share"]),
         "nox_kg": outcome.nox_kg_per_household,
+        "mean_km_out": float(conv["d_centre"].mean()) if len(conv) else float("nan"),
+        "protected_cells": int(conv["protected"].sum()) if len(conv) else 0,
+        "converted_cells": int(len(conv)),
     }
 
 
 def page_simulator() -> None:
-    with st.sidebar:
-        st.markdown("#### City")
-        city_name = st.selectbox("Analyse", list(cities.CITIES), key="sim_city",
-                                 label_visibility="collapsed")
-    city = cities.pick(city_name)
-
     header(
-        "14 · Workbench",
+        "07.1 · Workbench",
         "Run two futures against each other",
         f"Pick a set of decisions on the left and a different set on the right, and read the "
         f"gap. The absolute numbers in either column are close to meaningless — the grid is "
-        f"made up and the labels were generated from it. The *difference* is not, because "
-        f"everything invented is identical on both sides and cancels. "
-        f"Currently modelling {city.name}: {city.binding_constraint}",
+        f"made up and the labels were generated from it. The difference is not, because "
+        "everything invented is identical on both sides and cancels.",
     )
+    city = compare.city_switch("sim_city", allow_both=False, default="Enschede")[0]
+    city_name = city.name
+    st.caption(f"{city.name.upper()}, {city.country.upper()}  ·  {city.binding_constraint}")
 
-    st.warning(
-        "**This is a workbench, not a forecast.** Nothing here predicts what either city will "
-        "look like. It prices decisions against each other under one stated set of rules, which "
-        "is the only thing a model on synthetic labels can honestly be used for."
-    )
+    caveat(
+        "A workbench, not a forecast",
+        "Nothing here predicts what either city will look like. It prices decisions against "
+        "each other under one stated set of rules, which is the only thing a model built on "
+        "synthetic labels can honestly be used for.",
+        "critical")
 
     left, right = st.columns(2)
     with left:
@@ -195,6 +203,8 @@ def page_simulator() -> None:
     ya, frames_a, mob_a = _run(city_name, a.__dict__)
     yb, frames_b, mob_b = _run(city_name, b.__dict__)
 
+    dist_a = mob_a.get("mean_km_out", float("nan"))
+    dist_b = mob_b.get("mean_km_out", float("nan"))
     fa, fb = ya.iloc[-1], yb.iloc[-1]
     start = ya.iloc[0]
     land_a = fa["built_up_km2"] - start["built_up_km2"]
@@ -204,8 +214,9 @@ def page_simulator() -> None:
     stats([
         ("Land converted, A", f"{land_a:+,.1f} km²", a.label),
         ("Land converted, B", f"{land_b:+,.1f} km²", b.label),
-        ("Difference", f"{land_b - land_a:+,.1f} km²",
-         "What choosing B over A costs or saves in land."),
+        ("New building sits this far out",
+         f"{dist_a:,.1f} → {dist_b:,.1f} km",
+         "Mean distance from the centre of the land each run converts, A then B."),
         ("Car-km difference", f"{(mob_b['car_km'] / max(mob_a['car_km'], 1e-9) - 1) * 100:+.0f}%",
          "Commuting car-kilometres per household, B against A."),
     ])
@@ -299,24 +310,27 @@ def page_simulator() -> None:
     st.divider()
     figure(
         "14.3",
-        "Land against driving: the trade nobody gets to avoid",
-        "Each scenario as one point. Left is less land taken; down is less driving.",
-        reads_as="The bottom-left corner is the one everybody wants. Building outward is cheap "
-                 "per dwelling and lands top-right; building inward and pricing the car lands "
-                 "bottom-left and costs political capital instead. There is no lever in this "
-                 "model that reaches bottom-left for free.",
+        "Distance against driving: the trade nobody gets to avoid",
+        "Each scenario as one point. Left is new building closer to the centre; down is less "
+        "driving.",
+        reads_as="The bottom-left corner is the one everybody wants. The horizontal axis is "
+                 "where the new housing goes, not how much of it there is — the quantity is "
+                 "set by the population and barely moves. Pushing development outward and "
+                 "pricing the car pull in opposite directions on the vertical axis, which is "
+                 "why a city that builds on its edge and then prices parking is fighting "
+                 "itself.",
     )
     trade = pd.DataFrame([
-        {"scenario": a.label, "land_km2": land_a, "car_km": mob_a["car_km"],
+        {"scenario": a.label, "km_out": dist_a, "car_km": mob_a["car_km"],
          "nox": mob_a["nox_kg"]},
-        {"scenario": b.label, "land_km2": land_b, "car_km": mob_b["car_km"],
+        {"scenario": b.label, "km_out": dist_b, "car_km": mob_b["car_km"],
          "nox": mob_b["nox_kg"]},
     ])
     pts = (
         alt.Chart(trade)
         .mark_point(filled=True, size=340, stroke=SURFACE, strokeWidth=2)
         .encode(
-            x=alt.X("land_km2:Q", title="Land converted by the horizon, km²",
+            x=alt.X("km_out:Q", title="New building, mean km from the centre",
                     scale=alt.Scale(zero=False, nice=True),
                     axis=alt.Axis(format=",.1f", grid=True, gridColor=GRID)),
             y=alt.Y("car_km:Q", title="Commuting car-km per household per year",
@@ -326,7 +340,7 @@ def page_simulator() -> None:
                             scale=alt.Scale(domain=[a.label, b.label],
                                             range=[SERIES[0], SERIES[1]]),
                             legend=None),
-            tooltip=["scenario", alt.Tooltip("land_km2:Q", format=",.2f"),
+            tooltip=["scenario", alt.Tooltip("km_out:Q", format=",.2f"),
                      alt.Tooltip("car_km:Q", format=",.0f")],
         )
     )
@@ -343,6 +357,9 @@ def page_simulator() -> None:
         ("Built-up area, km²", fa["built_up_km2"], fb["built_up_km2"], ",.1f"),
         ("Land converted, km²", land_a, land_b, ",.2f"),
         ("Built-up density, per km²", fa["built_up_density"], fb["built_up_density"], ",.0f"),
+        ("New building, mean km from centre", dist_a, dist_b, ",.2f"),
+        ("…of which on protected land, cells",
+         mob_a["protected_cells"], mob_b["protected_cells"], ",.0f"),
         ("Car share of commutes", mob_a["car_share"], mob_b["car_share"], ".3f"),
         ("Commuting car-km per household", mob_a["car_km"], mob_b["car_km"], ",.0f"),
         ("NOx kg per household per year", mob_a["nox_kg"], mob_b["nox_kg"], ".3f"),
@@ -361,9 +378,12 @@ def page_simulator() -> None:
     note(
         "**Is:** a way to price one decision against another under a stated rule, with every "
         "lever visible and the invented parts held identical on both sides so they cancel. "
-        "Switching the constraints off on one side and leaving them on the other gives the cost "
-        "of the constraint in square kilometres, which is a number worth having and is very "
-        "hard to get any other way."
+        "Switch the constraints off on one side and the interesting thing is what does "
+        "<em>not</em> move: the amount of land converted is the same either way, because the "
+        "population needing housing is the same. What moves is the distance. In Cape Town the "
+        "protected land is close in, so lifting the protection pulls new development from "
+        "twenty kilometres out to five — and that, rather than any number of hectares, is what "
+        "the constraint costs."
     )
     note(
         "**Is not:** a forecast, a plan, or evidence about either city. The grid is synthetic, "

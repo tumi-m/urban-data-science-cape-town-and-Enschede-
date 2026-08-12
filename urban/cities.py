@@ -57,6 +57,9 @@ class Geometry:
     protected_centre: tuple[float, float] | None = None
     protected_radius_km: float = 0.0
     edge_margin_km: float = 1.6      # how far past the built area building is allowed
+    # Land already built on, km². The built radius is solved to hit this so the
+    # grid agrees with the land ledger instead of being tuned by hand.
+    built_km2: float = 0.0
 
 
 # ---------------------------------------------------------------------
@@ -248,6 +251,7 @@ ENSCHEDE = City(
         hard_edge_x=4.0,                      # the German border
         protected_centre=(4.2, -3.0),         # standing in for the Aamsveen bog
         protected_radius_km=1.8,
+        built_km2=43.0,
     ),
     binding_constraint="Nitrogen. There is land, and the allowance to emit onto it is zero.",
     permitted_km2=0.0,
@@ -286,6 +290,7 @@ CAPE_TOWN = City(
         protected_centre=(-2.5, -4.0),           # Table Mountain National Park
         protected_radius_km=6.0,
         edge_margin_km=3.0,
+        built_km2=644.0,
     ),
     binding_constraint=(
         "Land. A mountain, two oceans and a protected-area network leave 895 km² for "

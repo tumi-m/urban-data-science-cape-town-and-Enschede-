@@ -326,6 +326,36 @@ CSS = f"""
   }}
   table.scorecard tr:last-child td {{ border-bottom: none; }}
 
+  /* ---------- editorial caveats ----------
+     Not st.error / st.warning. Those are how Streamlit reports that the
+     program has failed, and using them for methodology made the modelling
+     pages look like they were throwing errors. These carry the same text at
+     full strength with a coloured rule and a label, and read as authored. */
+  .caveat {{
+      border-left: 3px solid var(--edge);
+      background: var(--fill);
+      padding: 0.72rem 0.95rem 0.78rem 0.95rem;
+      margin: 0.9rem 0 1.05rem 0;
+      border-radius: 0 4px 4px 0;
+      max-width: 82ch;
+  }}
+  .caveat-label {{
+      font-size: 0.64rem;
+      text-transform: uppercase;
+      letter-spacing: 0.11em;
+      font-weight: 650;
+      color: var(--edge);
+      margin-bottom: 0.32rem;
+  }}
+  .caveat-body {{
+      font-size: 0.87rem;
+      line-height: 1.62;
+      color: {INK};
+  }}
+  .caveat.note     {{ --edge: {INK_3};     --fill: {SURFACE_2}; }}
+  .caveat.caution  {{ --edge: #b8791f;     --fill: #fdf6ec; }}
+  .caveat.critical {{ --edge: {SERIES[1]}; --fill: #fdf0ea; }}
+
   /* ---------- lede: the one-sentence answer under a header ---------- */
   .answer {{
       font-size: 1.02rem;

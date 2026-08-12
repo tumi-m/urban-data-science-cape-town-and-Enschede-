@@ -26,7 +26,8 @@ from . import spatial as sp
 from .forecast import MODELS, compare_all, fit_and_forecast
 from .provenance import BADGE, SYNTHETIC, Series, worst_class
 from .theme import GRID, INK_2, INK_3, SERIES, style
-from .ui import data_badge, figure, header, note, provenance, stats, values_table
+from .ui import (caveat, data_badge, figure, header, note, provenance, stats,
+                 values_table)
 
 LAND_AREA_KM2 = 140.0
 SYNTHETIC_GRID = Series(
@@ -318,7 +319,7 @@ def page_projection() -> None:
     ])
 
     for w in fit.warnings:
-        st.warning(w)
+        caveat("What this model cannot do", w, "caution")
 
     st.divider()
     figure("01", f"History and projection to {horizon}",
@@ -513,14 +514,15 @@ def page_development() -> None:
         ("Base rate", f"{m['Base rate']:.2f}", "Share of cells developed — the score to beat."),
     ])
 
-    st.error(
-        "**Read these numbers correctly.** The labels were generated from these same features by "
-        "a process written down in `urban/spatial.py`. A high score therefore measures whether "
-        "the learner can recover assumptions that were deliberately put there — it is a test of "
-        f"the pipeline, not evidence about {city.name}. The honest use of this page is to check that "
-        "the machinery works and to see how the classifier families differ; the moment real "
-        "labels arrive, the same code becomes a real model and nothing else changes."
-    )
+    caveat(
+        "Read these scores correctly",
+        "The labels were generated from these same features by a process written down in "
+        "<code>urban/spatial.py</code>. A high score therefore measures whether the learner can "
+        "recover assumptions that were deliberately put there — it is a test of the pipeline, "
+        f"not evidence about {city.name}. The honest use of this page is to check that the "
+        "machinery works and to see how the classifier families differ; the moment real labels "
+        "arrive, the same code becomes a real model and nothing else changes.",
+        "critical")
 
     st.divider()
     c1, c2 = st.columns([3, 2])
@@ -777,7 +779,7 @@ def page_simulation() -> None:
     note(
         "**Is:** a transparent transition rule, run forward, whose every parameter is on screen "
         "and adjustable. Useful for asking what happens to land take if densification runs at 40 "
-        "per cent instead of 80, and for pricing a constraint in hectares."
+        "per cent instead of 80, and for showing where a constraint pushes development to, which is what it actually changes."
     )
     note(
         f"**Is not:** a prediction of {city.name} in 2050. The grid is synthetic, the labels were "
