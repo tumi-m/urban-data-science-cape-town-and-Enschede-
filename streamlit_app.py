@@ -48,6 +48,7 @@ from urban.pages import (  # noqa: E402
 )
 from urban.pages_behaviour import page_behaviour, page_scaling  # noqa: E402
 from urban.pages_simulator import page_simulator  # noqa: E402
+from urban.pages_open import page_opening  # noqa: E402
 from urban import chrome, geo  # noqa: E402
 
 
@@ -1890,47 +1891,61 @@ def chart_land_per_twh() -> alt.Chart:
 # "data and models".
 
 PARTS: dict[str, dict[str, object]] = {
-    "1 · Start here": {
-        "1.1 What this is about": lambda: page_start(),
-        "1.2 The two cities compared": lambda: page_compare(),
+    "1 · The argument": {
+        "1.1 Two cities that cannot build": lambda: page_opening(),
+        "1.2 Side by side, in detail": lambda: page_compare(),
     },
-    "2 · Cape Town": {
-        "2.1 Running out of room": lambda: page_cape_town(),
+    "2 · How much room is left": {
+        "2.1 Cape Town: running out of land": lambda: page_cape_town(),
+        "2.2 Enschede: land it may not use": lambda: page_constraints(),
     },
-    "3 · Enschede": {
-        "3.1 The seven limits": lambda: page_constraints(),
-        "3.2 Nitrogen": lambda: page_nitrogen(),
-        "3.3 Energy and travel": lambda: page_mobility(),
-        "3.4 Reaching a station": lambda: page_access(),
-        "3.5 The German border": lambda: page_border(),
-        "3.6 Land for energy": lambda: page_energy(),
+    "3 · Anatomy of a field constraint": {
+        "3.1 Nitrogen: an allowance of zero": lambda: page_nitrogen(),
+        "3.2 Energy and travel": lambda: page_mobility(),
+        "3.3 Reaching a station": lambda: page_access(),
+        "3.4 The German border": lambda: page_border(),
+        "3.5 Land for energy": lambda: page_energy(),
     },
-    "4 · Machine learning": {
-        "4.1 Population history": lambda: page_population(),
+    "4 · People and growth": {
+        "4.1 Population, 1950 to now": lambda: page_population(),
         "4.2 Forecasting 2050 — 7 models": lambda: page_projection(),
-        "4.3 Where building goes — 3 models": lambda: page_development(),
-        "4.4 Simulating growth to 2050": lambda: page_simulation(),
-        "4.5 How households choose": lambda: page_behaviour(),
-        "4.6 Making it fast enough to use": lambda: page_scaling(),
     },
-    "5 · Simulate it yourself": {
-        "5.1 Run two futures against each other": lambda: page_simulator(),
+    "5 · Where building goes": {
+        "5.1 Predicting development — 3 models": lambda: page_development(),
+        "5.2 Simulating growth to 2050": lambda: page_simulation(),
     },
-    "6 · Sources": {
-        "6.1 Where the numbers come from": lambda: page_method(),
+    "6 · How people travel": {
+        "6.1 How households choose": lambda: page_behaviour(),
+        "6.2 Making it fast enough to use": lambda: page_scaling(),
+    },
+    "7 · Workbench": {
+        "7.1 Run two futures against each other": lambda: page_simulator(),
+    },
+    "8 · Sources": {
+        "8.1 Where the numbers come from": lambda: page_method(),
     },
 }
 
 PART_BLURB = {
-    "1 · Start here": "The argument in short, and the two cities against each other.",
-    "2 · Cape Town": "Almost no land left — and the land that is left is the wrong land.",
-    "3 · Enschede": "Plenty of land and still cannot build. Six things in the way.",
-    "4 · Machine learning": "Forecasting models, a development classifier, a growth "
-                          "simulation, and households that choose. Pick either city in the "
-                          "sidebar — every model runs on both.",
-    "5 · Simulate it yourself": "A workbench: set two futures side by side and read the "
-                               "difference in land, density and driving.",
-    "6 · Sources": "Every number, where it came from, and what this gets wrong.",
+    "1 · The argument": "The claim, the arithmetic behind it, and both cities in one frame.",
+    "2 · How much room is left": "The land each city has, and what took the rest.",
+    "3 · Anatomy of a field constraint": "What a limit with no edge does to a city. "
+                                        "Enschede, in detail.",
+    "4 · People and growth": "How many people are coming, and how much the models disagree.",
+    "5 · Where building goes": "Which land develops, what it is worth, what the constraint "
+                              "costs in hectares.",
+    "6 · How people travel": "What households choose when prices change, and what that does "
+                            "to the nitrogen account.",
+    "7 · Workbench": "Set two futures against each other and read the difference.",
+    "8 · Sources": "Every number, where it came from, and what this gets wrong.",
+}
+
+# Which parts analyse both cities. Shown in the menu so a reader can see at a
+# glance that the coverage is not lopsided — the previous version buried this
+# and the first thing anyone asked was where Cape Town's models were.
+BOTH_CITIES = {
+    "1 · The argument", "2 · How much room is left", "4 · People and growth",
+    "5 · Where building goes", "6 · How people travel", "7 · Workbench", "8 · Sources",
 }
 
 
@@ -1945,16 +1960,26 @@ def main() -> None:
     chrome.inject()
 
     with st.sidebar:
-        st.markdown("### Cape Town & Enschede")
-        st.caption("what limits building")
-        st.write("")
+        st.markdown(
+            "<div class='brand'><div class='brand-name'>Cape Town &amp; Enschede</div>"
+            "<div class='brand-sub'>what limits building</div></div>",
+            unsafe_allow_html=True)
 
-        # Dropdowns rather than radio lists: five parts and up to six sections
-        # is thirteen always-visible options in a narrow column, which pushes
-        # everything else below the fold. A closed select shows where you are
-        # in one line and opens to the rest.
+        # Dropdowns rather than radio lists: eight parts and up to five sections
+        # is a wall of always-visible options in a narrow column. A closed
+        # select shows where you are in one line and opens to the rest.
         part = st.selectbox("Part of the report", list(PARTS), key="part")
         st.caption(PART_BLURB[part])
+
+        # Coverage, stated in the menu. The report's own reader could not tell
+        # which parts covered both cities, so it now says so where the choice
+        # is made rather than three screens into the section.
+        if part in BOTH_CITIES:
+            st.markdown("<div class='cover-tag both'>Both cities</div>",
+                        unsafe_allow_html=True)
+        else:
+            st.markdown("<div class='cover-tag one'>Enschede in depth</div>",
+                        unsafe_allow_html=True)
 
         sections = PARTS[part]
         if len(sections) > 1:

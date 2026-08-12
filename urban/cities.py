@@ -120,6 +120,71 @@ def cape_town_population() -> tuple[pd.DataFrame, Series]:
 
 
 # ---------------------------------------------------------------------
+# The land ledger
+# ---------------------------------------------------------------------
+
+# Every square kilometre a city has, and what happens to it on the way to being
+# somewhere you could actually put a house. Both cities are run through the
+# same ledger and they fail in different places, which is the whole argument of
+# this report reduced to one arithmetic:
+#
+#   Cape Town runs out of LAND.        It reaches the bottom with 251 km² left.
+#   Enschede runs out of PERMISSION.   It reaches the bottom with 97 km² of land
+#                                      and an allowance of zero to build on it.
+#
+# A ledger that stopped at "land physically available" would score Enschede as
+# the healthier of the two, which is exactly backwards, and that is why the last
+# row of each is a legal quantity rather than a physical one.
+
+_ENSCHEDE_LEDGER = [
+    ("Municipal area", 140.0, "total", "Everything inside the municipal boundary."),
+    ("Already built on", -43.0, "used", "The existing urban fabric."),
+    ("Water and infrastructure", -7.0, "used",
+     "Rivers, canals, motorway and rail land."),
+    ("Nature and forest", -25.0, "hard",
+     "Including the Aamsveen raised bog, which is what makes the nitrogen test bite."),
+]
+
+_CAPE_TOWN_LEDGER = [
+    ("Municipal area", 2451.0, "total", "Everything inside the metropolitan boundary."),
+    ("Formally protected", -557.0, "hard",
+     "Table Mountain National Park, nature reserves and marine protected areas. "
+     "22.7% of the city, and none of it is available."),
+    ("Outside the urban edge", -999.0, "hard",
+     "Mountain, agricultural and rural land beyond the development edge."),
+    ("Already built on", -644.0, "used",
+     "About 72% of the land inside the edge is already developed."),
+]
+
+
+def _ledger_frame(rows, city_name: str, permitted: float | None = None) -> pd.DataFrame:
+    """Waterfall rows with running totals, ready to plot."""
+    out, running = [], 0.0
+    for label, value, kind, note in rows:
+        start = running
+        running = value if kind == "total" else running + value
+        out.append({
+            "city": city_name, "step": label, "value": value, "kind": kind,
+            "start": 0.0 if kind == "total" else running,
+            "end": value if kind == "total" else start,
+            "running": running, "note": note,
+        })
+    out.append({
+        "city": city_name, "step": "Land physically left", "value": running,
+        "kind": "result", "start": 0.0, "end": running, "running": running,
+        "note": "What remains after everything above. Farmland and vacant plots — "
+                "convertible in principle.",
+    })
+    if permitted is not None:
+        out.append({
+            "city": city_name, "step": "…that may actually be built on", "value": permitted,
+            "kind": "permitted", "start": 0.0, "end": permitted, "running": permitted,
+            "note": "The same land, after the law is applied.",
+        })
+    return pd.DataFrame(out)
+
+
+# ---------------------------------------------------------------------
 # The registry
 # ---------------------------------------------------------------------
 
@@ -136,11 +201,19 @@ class City:
     binding_constraint: str       # the one-line answer to "what stops building"
     population_note: str          # what the series does, in plain words
     forecast_note: str            # why the models behave the way they do here
+    # What the ledger ends on: the legal quantity, not the physical one.
+    permitted_note: str = ""
+    permitted_km2: float | None = None
     _population: object = field(repr=False, default=None)
     _sites: object = field(repr=False, default=None)
+    _ledger: object = field(repr=False, default=None)
 
     def population(self) -> tuple[pd.DataFrame, Series]:
         return self._population()
+
+    def ledger(self) -> pd.DataFrame:
+        """The land ledger for this city, as waterfall rows."""
+        return _ledger_frame(self._ledger, self.name, self.permitted_km2)
 
     def sites(self) -> pd.DataFrame:
         """Recognisable places, in this city's own coordinate frame.
@@ -177,6 +250,13 @@ ENSCHEDE = City(
         protected_radius_km=1.8,
     ),
     binding_constraint="Nitrogen. There is land, and the allowance to emit onto it is zero.",
+    permitted_km2=0.0,
+    permitted_note=(
+        "Enschede reaches the bottom of the ledger with 97 km² of land and permission to "
+        "build on none of it. Since 2019 a project that adds any nitrogen to an over-loaded "
+        "habitat gets no allowance at all, and the raised bog on the city's own edge is four "
+        "times over its limit. The land is there. The permission is zero."
+    ),
     population_note=(
         "Three regimes, not one: fast growth on textiles to the early 1960s, thirty years flat "
         "while that industry collapsed, then slow growth from students and international "
@@ -211,6 +291,12 @@ CAPE_TOWN = City(
         "Land. A mountain, two oceans and a protected-area network leave 895 km² for "
         "4.8 million people."
     ),
+    permitted_km2=251.0,
+    permitted_note=(
+        "Cape Town reaches the bottom of the ledger with about 251 km² — roughly 10% of the "
+        "municipality, for a city adding a Enschede-sized population every three years. The "
+        "permission exists. The land does not."
+    ),
     population_note=(
         "One long curve and no plateau anywhere: 618,000 in 1950 to 4.8 million today. The "
         "city added more people in the last thirty years than Enschede has ever had."
@@ -229,7 +315,9 @@ def _cape_town_sites():
 
 CAPE_TOWN._population = cape_town_population
 CAPE_TOWN._sites = _cape_town_sites
+CAPE_TOWN._ledger = _CAPE_TOWN_LEDGER
 ENSCHEDE._population = _enschede_population
+ENSCHEDE._ledger = _ENSCHEDE_LEDGER
 
 CITIES: dict[str, City] = {c.name: c for c in (ENSCHEDE, CAPE_TOWN)}
 

@@ -11,19 +11,21 @@ model, on which data, evaluated how, and what it cannot do.
 
 from __future__ import annotations
 
+import altair as alt
 import numpy as np
 import pandas as pd
 import streamlit as st
 
 from . import animate
 from . import cities
+from . import compare
 from . import demography as dem
 from . import geo
 from . import owid
 from . import spatial as sp
 from .forecast import MODELS, compare_all, fit_and_forecast
 from .provenance import BADGE, SYNTHETIC, Series, worst_class
-from .theme import SERIES
+from .theme import GRID, INK_2, INK_3, SERIES, style
 from .ui import data_badge, figure, header, note, provenance, stats, values_table
 
 LAND_AREA_KM2 = 140.0
@@ -46,24 +48,25 @@ def _grid(city_name: str = "Enschede"):
     return sp.build_grid(geometry=cities.pick(city_name).geometry)
 
 
-def _city():
-    """The city selector, shown once per machine-learning section.
+def _city(key: str = "ml_city", allow_both: bool = False, default: str = "Enschede"):
+    """The city selector for a modelling section.
 
-    The report used to analyse Enschede with four models and Cape Town with a
-    paragraph, which said more about the order the work was done in than about
-    either city. The models are the same models; the city is a parameter. It
-    lives in the sidebar above the section's own controls because it changes
-    what every one of them means.
+    This used to be a dropdown in the sidebar, and the result was a reader
+    reporting that there were no models for Cape Town. There were; they could
+    not be found. It is now a segmented control at the top of the content,
+    which is the most prominent thing on the page because it changes the
+    meaning of everything under it.
+
+    Sections that can show both cities at once pass `allow_both`. Sections
+    driven by a single set of sidebar model controls do not, because two
+    parameterised models sharing one control panel would be a lie about what
+    the controls apply to.
     """
-    with st.sidebar:
-        st.markdown("#### City")
-        name = st.selectbox(
-            "Analyse", list(cities.CITIES), key="ml_city",
-            label_visibility="collapsed",
-            help="Every model in this part runs on whichever city is selected.")
-    city = cities.pick(name)
-    st.caption(f"{city.name.upper()}, {city.country.upper()}  ·  {city.binding_constraint}")
-    return city
+    selected = compare.city_switch(key, allow_both=allow_both, default=default)
+    if len(selected) == 1:
+        st.caption(f"{selected[0].name.upper()}, {selected[0].country.upper()}"
+                   f"  ·  {selected[0].binding_constraint}")
+    return selected if allow_both else selected[0]
 
 
 # =====================================================================
@@ -106,53 +109,24 @@ def _flattest_stretch(frame: pd.DataFrame, window: int = 20) -> dict:
 
 
 def page_population() -> None:
-    city = _city()
-    frame, series = _population(city.name)
     header(
-        "08 · Population",
-        f"How {city.name}'s population changed",
-        f"{city.population_note} Any model of this has to handle the whole shape, and most of "
-        f"them just copy whichever part they were shown most of.",
+        "04.1 · Population",
+        "Where the people are, and where they came from",
+        "Two cities whose population histories have almost nothing in common. One added five "
+        "thousand people a decade and stopped for thirty years; the other added four million "
+        "and has not stopped once. The models in the next section have to fit both, and that "
+        "is where they start to disagree.",
     )
-    data_badge(series)
+    selected = _city("pop_city", allow_both=True, default=compare.BOTH)
+    both_mode = len(selected) > 1
 
-    first, last = frame.iloc[0], frame.iloc[-1]
-    slowest = _flattest_stretch(frame)
-    stats([
-        ("Population", f"{last['population']:,.0f}", f"In {int(last['year'])}."),
-        ("Since 1950", f"+{(last['population'] / first['population'] - 1) * 100:,.0f}%",
-         f"From {first['population']:,.0f} in {int(first['year'])}."),
-        ("Slowest twenty years", f"+{slowest['growth'] * 100:.0f}%",
-         f"{slowest['start']}–{slowest['end']}, the flattest stretch in the record."),
-        ("Gross density", f"{last['population'] / city.land_area_km2:,.0f}/km²",
-         f"Over {city.land_area_km2:,.0f} km² of municipal land, much of which is not urban."),
-    ])
-
-    st.divider()
-    figure("01", "Population since 1950",
-           f"Number of people living in {city.name}, each year. Press play to watch it arrive.",
-           "A plateau you watch arrive reads differently from one already drawn — which is the "
-           "only reason this moves. Drag the slider to stop anywhere.")
-    years = frame["year"].tolist()
-    animate.player(
-        f"pop_hist_{city.key}", years,
-        lambda i: st.altair_chart(
-            animate.lines_upto(
-                frame.assign(entity=city.name), "year", "population", "entity",
-                years[i], x_title="", y_title="inhabitants",
-                colours={city.name: city.accent},
-                x_domain=(years[0], years[-1]),
-                y_domain=(0, frame["population"].max() * 1.08), height=330),
-            width="stretch", key=f"pop_history_{city.key}"))
-    provenance(series.klass, series.source)
-
-    st.divider()
-    figure("02", "The two cities on one axis",
+    # ---- 01: the comparison, always shown, always first --------------
+    figure("01", "Both cities since 1950, indexed",
            "Both start at 100 in 1950, so the lines show growth rates rather than sizes. "
-           "Press play.",
-           "This is the comparison the report exists to make, and it only works indexed: "
-           "Cape Town added more people since 1950 than Enschede has ever had, so on an "
-           "absolute axis Enschede would be a flat line along the bottom.")
+           "Press play to watch them separate.",
+           "Indexing is the only fair way to put these two on one axis: Cape Town added more "
+           "people since 1950 than Enschede has ever had, so on an absolute axis Enschede "
+           "would be a flat line along the bottom. Cape Town ends near 780; Enschede near 155.")
     both = _indexed_both()
     shared = sorted(set(both[both["entity"] == "Enschede"]["year"])
                     & set(both[both["entity"] == "Cape Town"]["year"]))
@@ -169,6 +143,55 @@ def page_population() -> None:
     provenance("derived", "Both population series, rebased to 1950.")
 
     st.divider()
+
+    # ---- 02: each city's own series, at its own scale ----------------
+    figure("02", "Each city at its own scale",
+           "Absolute population. The two panels do not share an axis — Cape Town is thirty "
+           "times larger, and a shared axis would show only that.",
+           "Enschede's shape is three regimes with a thirty-year plateau in the middle. Cape "
+           "Town's is one curve that never bends. Those two shapes are why the same seven "
+           "forecasting models behave so differently on them.")
+
+    def _one(c):
+        f, sr = _population(c.name)
+        yrs = f["year"].tolist()
+        animate.player(
+            f"pop_hist_{c.key}", yrs,
+            lambda i: st.altair_chart(
+                animate.lines_upto(
+                    f.assign(entity=c.name), "year", "population", "entity",
+                    yrs[i], x_title="", y_title="inhabitants",
+                    colours={c.name: c.accent},
+                    x_domain=(yrs[0], yrs[-1]),
+                    y_domain=(0, f["population"].max() * 1.08), height=300),
+                width="stretch", key=f"pop_history_{c.key}"))
+        first, last = f.iloc[0], f.iloc[-1]
+        slowest = _flattest_stretch(f)
+        st.caption(
+            f"{first['population']:,.0f} in {int(first['year'])} → "
+            f"{last['population']:,.0f} in {int(last['year'])} "
+            f"({last['population'] / first['population'] - 1:+.0%}). Slowest twenty years: "
+            f"{slowest['start']}–{slowest['end']}, {slowest['growth']:+.0%}.")
+
+    compare.facet_rasters(_one, selected)
+    for c in selected:
+        f, sr = _population(c.name)
+        st.caption(f"{c.name} — {sr.caption()}")
+
+    st.divider()
+
+    # ---- the rest of the page runs per selected city -----------------
+    for city in selected:
+        frame, series = _population(city.name)
+        if both_mode:
+            compare.city_header(city)
+        _population_detail(city, frame, series, both_mode)
+        if both_mode and city is not selected[-1]:
+            st.divider()
+
+
+def _population_detail(city, frame, series, both_mode: bool) -> None:
+    """Per-city detail: what drives the change, and density."""
     if city.key == "enschede":
         figure("03", "What drives the change: births, and people moving",
                "Three things that add or remove people each year. Bars above zero add, bars "
@@ -211,7 +234,7 @@ def page_population() -> None:
         )
 
     st.divider()
-    figure("04", "Two ways of measuring density",
+    figure("04", f"Two ways of measuring density — {city.name}",
            "People per km². The orange line divides by the whole municipality; the blue divides "
            "only by the part that is actually built on.",
            "When the two lines pull apart, the city is spreading out faster than it is growing. "
@@ -894,24 +917,80 @@ def page_compare() -> None:
     from . import capetown as ct
 
     header(
-        "Both cities",
-        "Cape Town and Enschede, side by side",
-        "These two cities are in one project because they are hard to build in for opposite "
-        "reasons. Cape Town has run out of land. Enschede has plenty and still cannot build. "
-        "Comparing them shows something neither shows alone: what kind of limit you are "
-        "dealing with decides what you can do about it.",
+        "01.2 · Side by side",
+        "Everything that is measured for one, measured for the other",
+        "The two cities are in one project because they are hard to build in for opposite "
+        "reasons, and the comparison shows something neither shows alone: what kind of limit "
+        "you face decides what you can do about it. This page is the comparison in full — the "
+        "scorecard, the ratios, and the questions answered twice.",
     )
 
+    df = compare.scorecard_frame()
+    en, ctn = df.iloc[0], df.iloc[1]
+
     stats([
-        ("Cape Town, people per built km²", f"{ct.PEOPLE_PER_BUILDABLE_KM2:,.0f}",
-         "On 895 km² inside the urban edge."),
-        ("Enschede, people per built km²", f"{161_000 / 43:,.0f}",
-         "On about 43 km² of built-up land."),
-        ("Cape Town's limit", "A line",
-         "You can argue about where it goes; you cannot make it smaller."),
-        ("Enschede's limit", "A number",
-         "Nitrogen per hectare per year. Bring it down and it helps everywhere at once."),
+        ("Cape Town is this many times larger",
+         f"{ctn['Population'] / en['Population']:.0f}×", "By population."),
+        ("…but only this much more built land",
+         f"{ctn['Built-up, km²'] / en['Built-up, km²']:.0f}×",
+         "Which is why it is the denser of the two."),
+        ("Cape Town's limit", "A polygon",
+         "You can argue about where the line goes; you cannot make it smaller."),
+        ("Enschede's limit", "A field",
+         "A number per hectare per year. No line to move, and no site that is safe."),
     ])
+
+    st.divider()
+    st.subheader("The scorecard")
+    compare.scorecard()
+    provenance("derived", "Computed from the population series and land ledgers.")
+
+    st.divider()
+    figure(
+        "01", "Where the two cities differ most",
+        "Cape Town divided by Enschede, on each measure. A bar at 1 means they are equal.",
+        reads_as="The axis is logarithmic, so equal distances are equal ratios. Population is "
+                 "thirty times apart and built-up land only fifteen — that gap is the density "
+                 "difference. The measure that matters is at the bottom: land each city may "
+                 "still build on. Enschede's is zero, so the ratio is infinite and the bar "
+                 "runs off the chart, which is the honest way to draw it.")
+    ratio_rows = [
+        ("Population", ctn["Population"], en["Population"]),
+        ("Municipal area", ctn["Municipal area, km²"], en["Municipal area, km²"]),
+        ("Built-up land", ctn["Built-up, km²"], en["Built-up, km²"]),
+        ("People per built km²", ctn["Density per built km²"], en["Density per built km²"]),
+        ("Growth since 1950", 1 + ctn["Growth since 1950"], 1 + en["Growth since 1950"]),
+        ("Land physically left", ctn["Land physically left, km²"],
+         en["Land physically left, km²"]),
+    ]
+    rat = pd.DataFrame([
+        {"measure": m, "ratio": a / b if b else np.inf} for m, a, b in ratio_rows])
+    rat["label"] = [f"{v:.1f}×" for v in rat["ratio"]]
+    bars = (
+        alt.Chart(rat)
+        .mark_bar(height=20, cornerRadiusEnd=2, color=SERIES[1])
+        .encode(
+            y=alt.Y("measure:N", sort=list(rat.sort_values("ratio")["measure"]), title=None),
+            x=alt.X("ratio:Q", title="Cape Town ÷ Enschede",
+                    scale=alt.Scale(type="log"),
+                    axis=alt.Axis(format="~g", grid=True, gridColor=GRID)),
+            tooltip=["measure", alt.Tooltip("ratio:Q", format=".2f")],
+        )
+    )
+    tick = alt.Chart(pd.DataFrame({"x": [1.0]})).mark_rule(
+        strokeWidth=1.5, color=INK_3, strokeDash=[4, 3]).encode(x="x:Q")
+    txt = bars.mark_text(align="left", dx=6, fontSize=11, color=INK_2).encode(
+        text="label:N", color=alt.value(INK_2))
+    st.altair_chart(style(alt.layer(bars, tick, txt).properties(
+        height=230, padding={"right": 46})), width="stretch", key="cmp_ratio")
+    note(
+        "The dashed line is parity. Cape Town is larger on every physical measure and denser "
+        "per built square kilometre, which is the finding people find surprising — a South "
+        "African metro built around the car is more densely occupied, on the land it actually "
+        "uses, than a compact Dutch city. Enschede's low figure is not sprawl in the American "
+        "sense; it is a small city with a large agricultural municipality attached, and it is "
+        "exactly why the gross-density measure had to be split in two in the population section."
+    )
 
     st.divider()
     st.subheader("The same questions, both cities")
@@ -938,11 +1017,20 @@ def page_compare() -> None:
         note(body)
 
     st.divider()
-    st.subheader("What is not equal here")
+    st.subheader("What is still not equal here")
     note(
-        "The Enschede sections do their own arithmetic and show it. The Cape Town figures are "
-        "taken from published city documents and one third-party calculation, and repeated as "
-        "given. So this is a fair comparison of what the two cities look like, and not yet a "
-        "fair comparison of two analyses. Redoing the Cape Town side from source data is the "
-        "obvious next step."
+        "Both cities now run through the same land ledger, the same population models, the "
+        "same development classifier, the same growth simulation and the same workbench. Two "
+        "things remain uneven and neither is hidden. Cape Town has no annual "
+        "components-of-change series here, so the births-and-migration decomposition exists "
+        "for Enschede only. And section 3 spends five sections on Enschede's nitrogen because "
+        "a field constraint takes that long to explain, while Cape Town's limit takes one "
+        "because a reader already understands a fence."
+    )
+    note(
+        "The deeper inequality is in the sourcing. The Enschede constraint figures are worked "
+        "from Dutch statutory documents; the Cape Town figures come from published city "
+        "documents and one third-party calculation, repeated as given. Redoing the Cape Town "
+        "side from the open data portal at source is the obvious next step, and until it "
+        "happens this is a fair comparison of two cities rather than of two analyses."
     )

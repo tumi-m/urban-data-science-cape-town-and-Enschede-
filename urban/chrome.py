@@ -208,6 +208,136 @@ CSS = f"""
       max-width: 60ch;
   }}
 
+  /* ---------- sidebar brand and coverage tags ---------- */
+  .brand {{
+      border-top: 2px solid {INK};
+      padding-top: 0.7rem;
+      margin-bottom: 1.3rem;
+  }}
+  .brand-name {{
+      font-size: 0.98rem; font-weight: 650; color: {INK};
+      letter-spacing: -0.014em; line-height: 1.25;
+  }}
+  .brand-sub {{
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.11em;
+      color: {INK_3}; margin-top: 0.2rem;
+  }}
+  .cover-tag {{
+      display: inline-block;
+      font-size: 0.63rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 620;
+      padding: 0.16rem 0.5rem;
+      border-radius: 3px;
+      margin: 0.35rem 0 0.2rem 0;
+  }}
+  .cover-tag.both {{ background: {SERIES[2]}22; color: #147954; }}
+  .cover-tag.one  {{ background: {SERIES[0]}1f; color: #1c5da8; }}
+
+  /* ---------- the city switch ----------
+     A segmented control at the top of the content. It replaced a sidebar
+     dropdown that readers did not find, so it is deliberately the most
+     prominent control on the page. */
+  [data-testid="stSegmentedControl"] {{ margin: 0.1rem 0 1.4rem 0; }}
+  [data-testid="stSegmentedControl"] button {{
+      font-size: 0.86rem !important;
+      font-weight: 550 !important;
+      letter-spacing: -0.005em;
+      padding: 0.34rem 1.05rem !important;
+  }}
+
+  /* ---------- the land ledger ---------- */
+  .ledger-head {{
+      border-top: 3px solid var(--accent);
+      padding-top: 0.6rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: baseline;
+      gap: 0.55rem;
+  }}
+  .ledger-city {{
+      font-size: 1.04rem; font-weight: 620; color: {INK};
+      letter-spacing: -0.012em;
+  }}
+  .ledger-sub {{
+      font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em;
+      color: {INK_3};
+  }}
+  .ledger-note {{
+      font-size: 0.85rem; line-height: 1.62; color: {INK_2};
+      border-left: 2px solid var(--accent, {RULE});
+      padding-left: 0.8rem; margin-top: 0.55rem;
+  }}
+  .mini-head {{
+      border-top: 2px solid var(--accent);
+      padding-top: 0.45rem; margin-bottom: 0.55rem;
+      font-size: 0.72rem; font-weight: 620;
+      text-transform: uppercase; letter-spacing: 0.09em;
+      color: {INK};
+  }}
+
+  /* ---------- the scorecard ----------
+     A hand-built table rather than st.dataframe: this one is read, not
+     scrolled, and it needs the two city columns to carry their own colour. */
+  table.scorecard {{
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.4rem 0 0.6rem 0;
+      font-variant-numeric: tabular-nums;
+  }}
+  table.scorecard th {{
+      text-align: right;
+      padding: 0 0 0.55rem 0.9rem;
+      font-size: 0.74rem;
+      font-weight: 620;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--accent);
+      border-bottom: 2px solid var(--accent);
+      white-space: nowrap;
+  }}
+  table.scorecard th:first-child {{ border-bottom: 2px solid {RULE}; }}
+  table.scorecard td {{
+      padding: 0.5rem 0 0.5rem 0.9rem;
+      border-bottom: 1px solid {GRID};
+      text-align: right;
+      font-size: 0.92rem;
+      color: {INK};
+      white-space: nowrap;
+  }}
+  table.scorecard td.m {{
+      text-align: left;
+      color: {INK_2};
+      font-size: 0.85rem;
+      width: 34%;
+      white-space: normal;
+  }}
+  table.scorecard td.w {{
+      white-space: normal;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      color: {INK_2};
+  }}
+  table.scorecard tr.hi td {{
+      background: {SURFACE_2};
+      font-weight: 620;
+      font-size: 1.0rem;
+  }}
+  table.scorecard tr:last-child td {{ border-bottom: none; }}
+
+  /* ---------- lede: the one-sentence answer under a header ---------- */
+  .answer {{
+      font-size: 1.02rem;
+      line-height: 1.6;
+      color: {INK};
+      border-left: 3px solid {SERIES[0]};
+      padding: 0.5rem 0 0.5rem 1rem;
+      margin: 1.1rem 0 0.4rem 0;
+      max-width: 74ch;
+      background: {SURFACE_2};
+  }}
+
   /* ---------- two-city cards ---------- */
   .city-card {{
       border-top: 3px solid var(--accent);
