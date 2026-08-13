@@ -111,7 +111,6 @@ def _flattest_stretch(frame: pd.DataFrame, window: int = 20) -> dict:
 
 def page_population() -> None:
     header(
-        "04.1 · Population",
         "Where the people are, and where they came from",
         "Two cities whose population histories have almost nothing in common. One added five "
         "thousand people a decade and stopped for thirty years; the other added four million "
@@ -122,7 +121,7 @@ def page_population() -> None:
     both_mode = len(selected) > 1
 
     # ---- 01: the comparison, always shown, always first --------------
-    figure("01", "Both cities since 1950, indexed",
+    figure("Both cities since 1950, indexed",
            "Both start at 100 in 1950, so the lines show growth rates rather than sizes. "
            "Press play to watch them separate.",
            "Indexing is the only fair way to put these two on one axis: Cape Town added more "
@@ -146,7 +145,7 @@ def page_population() -> None:
     st.divider()
 
     # ---- 02: each city's own series, at its own scale ----------------
-    figure("02", "Each city at its own scale",
+    figure("Each city at its own scale",
            "Absolute population. The two panels do not share an axis — Cape Town is thirty "
            "times larger, and a shared axis would show only that.",
            "Enschede's shape is three regimes with a thirty-year plateau in the middle. Cape "
@@ -194,7 +193,7 @@ def page_population() -> None:
 def _population_detail(city, frame, series, both_mode: bool) -> None:
     """Per-city detail: what drives the change, and density."""
     if city.key == "enschede":
-        figure("03", "What drives the change: births, and people moving",
+        figure("What drives the change: births, and people moving",
                "Three things that add or remove people each year. Bars above zero add, bars "
                "below take away.",
                "The overall change is the distance from the bottom of the stack to the top — not "
@@ -235,7 +234,7 @@ def _population_detail(city, frame, series, both_mode: bool) -> None:
         )
 
     st.divider()
-    figure("04", f"Two ways of measuring density — {city.name}",
+    figure(f"Two ways of measuring density — {city.name}",
            "People per km². The orange line divides by the whole municipality; the blue divides "
            "only by the part that is actually built on.",
            "When the two lines pull apart, the city is spreading out faster than it is growing. "
@@ -271,7 +270,6 @@ def page_projection() -> None:
     city = _city()
     frame, series = _population(city.name)
     header(
-        "09 · Projection",
         f"Predicting {city.name}'s population in 2050",
         f"Seventy-five years of a smooth series cannot tell you where this city is heading. The "
         f"choice of model decides that, and the choice of model is a guess. So this is not a "
@@ -322,7 +320,7 @@ def page_projection() -> None:
         caveat("What this model cannot do", w, "caution")
 
     st.divider()
-    figure("01", f"History and projection to {horizon}",
+    figure(f"History and projection to {horizon}",
            "Solid line is what happened. Dashed line is what the model you picked expects.",
            "The dash is not decoration. The solid part is measured; the dashed part is a guess "
            "with arithmetic attached. Change the model in the sidebar and watch only the dashed "
@@ -352,7 +350,7 @@ def page_projection() -> None:
     )
     c1, c2 = st.columns(2)
     with c1:
-        figure("02", "Predicted versus what actually happened",
+        figure("Predicted versus what actually happened",
                "Each dot is one withheld year.",
                "The dashed diagonal is a perfect prediction. How far a dot sits from it is the "
                "error. Several dots on the same side means the model is not just noisy, it is "
@@ -360,7 +358,7 @@ def page_projection() -> None:
         st.altair_chart(owid.scatter_actual_predicted(fit.backtest),
                         width="stretch", key="fc_scatter")
     with c2:
-        figure("03", "How far off the model was, year by year",
+        figure("How far off the model was, year by year",
                "What actually happened, minus what the model said.",
                "You want this to look like random noise around zero. A pattern — a run of bars "
                "on one side, or a wave — means the model has missed something real.")
@@ -456,7 +454,6 @@ def _mask_map(city) -> None:
 
 def page_development() -> None:
     header(
-        "05.1 · Development",
         "Predicting where building happens",
         "Two models. One predicts which areas get built on, using how reachable they are, how "
         "dense they already are, and which land is off-limits. The other estimates what land is "
@@ -470,7 +467,7 @@ def page_development() -> None:
     # the report's thesis as geometry: a bog and a border against a mountain
     # and an ocean, and the fact that both cities' models are looking at the
     # same *kind* of picture is the reason they can be compared at all.
-    figure("01", "What each model is allowed to build on",
+    figure("What each model is allowed to build on",
            "Grey is available. Orange is withheld by a constraint. Both cities, at their own "
            "scales — Cape Town's frame is four times wider.",
            "Cape Town loses a large connected mass to the mountain and the coast, and what "
@@ -527,7 +524,7 @@ def page_development() -> None:
     st.divider()
     c1, c2 = st.columns([3, 2])
     with c1:
-        figure("02", "How likely each area is to be built on",
+        figure("How likely each area is to be built on",
                "Darker blue means the model thinks building is more likely there.",
                "The hole in the surface is protected land and the straight edge is the hard "
                "boundary — the German border for Enschede, the Atlantic for Cape Town. Both are "
@@ -542,7 +539,7 @@ def page_development() -> None:
             f"recognisable to be read against, not as a development register."
         )
     with c2:
-        figure("03", "What the model uses to decide",
+        figure("What the model uses to decide",
                "How much each input matters.",
                "For the logistic model these are directional — negative means it pushes "
                "building away. For the two tree models they only show how much an input gets "
@@ -585,7 +582,7 @@ def page_development() -> None:
         )
 
     st.divider()
-    figure("04", "What land is worth, by location",
+    figure("What land is worth, by location",
            "Estimated price per square metre.",
            "Four things drive it: how far to the centre, how far to a station, how dense the "
            "area already is, and whether open space is next door. This is a made-up surface "
@@ -635,7 +632,6 @@ def page_simulation() -> None:
     city = _city()
     frame, series = _population(city.name)
     header(
-        "11 · Simulation",
         f"Simulating {city.name}'s growth to 2050",
         "Each year, the extra people are split between filling in areas already built on and "
         "building on new land. Where the new building goes follows the map from the previous "
@@ -653,7 +649,11 @@ def page_simulation() -> None:
         st.markdown("#### Simulation")
         model_key = st.selectbox("Population path", list(MODELS),
                                  format_func=lambda k: MODELS[k].label,
-                                 index=list(MODELS).index("logistic"), key="sim_model")
+                                 # See the note in pages_simulator: a logistic
+                                 # fitted to Enschede's plateau predicts a small
+                                 # decline, so it makes every lever on this page
+                                 # look inert.
+                                 index=list(MODELS).index("linear"), key="sim_model")
         horizon = st.slider("Run to", 2030, 2070, 2050, 5, key="sim_horizon")
         densification = st.slider(
             "Share of growth absorbed by densification", 0.0, 1.0, 0.6, 0.05, key="sim_dens",
@@ -699,7 +699,7 @@ def page_simulation() -> None:
     ])
 
     st.divider()
-    figure("01", "Built-up area and density over the run",
+    figure("Built-up area and density over the run",
            "Left: how much land is built on. Right: how many people per km² of it.",
            "These two move in opposite directions whenever growth spreads outward instead of "
            "filling in. Drag the densification slider in the sidebar and watch them trade off.")
@@ -718,7 +718,7 @@ def page_simulation() -> None:
     values_table(with_constraints.yearly.round(2))
 
     st.divider()
-    figure("02", "Where the growth ends up",
+    figure("Where the growth ends up",
            "Left: land newly built on. Right: extra people added where building already was.",
            "The gap on the south-eastern edge is protected land the simulation is not allowed "
            "to touch. That gap is the constraint doing its job, made visible.")
@@ -736,7 +736,7 @@ def page_simulation() -> None:
             width="content", key="sim_added")
 
     st.divider()
-    figure("03", "How much land values go up",
+    figure("How much land values go up",
            "Change in price per square metre after the simulated building.",
            "Only density changes here — distance to the centre and to a station stay put, "
            "because geography does not move unless someone builds a new station. So this is the "
@@ -801,7 +801,6 @@ def page_cape_town() -> None:
     from . import capetown as ct
 
     header(
-        "Cape Town",
         "Cape Town: running out of room",
         "Cape Town has the opposite problem to Enschede. Enschede has land it cannot build "
         "on. Cape Town has almost no land left at all. Mountain on one side, ocean on two, "
@@ -822,7 +821,7 @@ def page_cape_town() -> None:
     ])
 
     st.divider()
-    figure("01", "Where Cape Town's land goes",
+    figure("Where Cape Town's land goes",
            "The whole municipality, split three ways. The blue block is everything the city "
            "is allowed to build on.")
     st.altair_chart(owid.land_split_bar(ct.land_split(), ct.MUNICIPAL_KM2),
@@ -837,7 +836,7 @@ def page_cape_town() -> None:
     provenance("derived", "City of Cape Town")
 
     st.divider()
-    figure("02", "Cape Town on the map",
+    figure("Cape Town on the map",
            "The places this section talks about, on an OpenStreetMap background.",
            "Notice the geography doing the work: the CBD is pinned against the mountain and the "
            "sea in the north-west, while the housing is twenty-five kilometres away on the "
@@ -852,7 +851,7 @@ def page_cape_town() -> None:
     st.caption(f"{geo.OSM_ATTRIBUTION} Positions are approximate.")
 
     st.divider()
-    figure("03", "How much room is actually left",
+    figure("How much room is actually left",
            "Land per person, counted three ways.",
            "The headline is 895 km² for 4.8 million people. But most of that is already built "
            "on. What is left to build on works out at about 52 m² each — a quarter of a tennis "
@@ -868,7 +867,7 @@ def page_cape_town() -> None:
     provenance("derived", "City of Cape Town figures, built share estimated")
 
     st.divider()
-    figure("04", "Protection comes in three layers",
+    figure("Protection comes in three layers",
            "Each tier restricts development a little less than the one above it.",
            "The headline protected figure is 22.7%. Add the two tiers below it and roughly a "
            "third of the city is restricted — which is why the buildable area is so much smaller "
@@ -883,7 +882,7 @@ def page_cape_town() -> None:
     provenance("official", "City of Cape Town biodiversity plan")
 
     st.divider()
-    figure("05", "Density, on the land people actually occupy",
+    figure("Density, on the land people actually occupy",
            "People per km² of buildable land, not of whole municipality.",
            "Cape Town is already denser than Enschede or Johannesburg on the land it uses. The "
            "problem is not that Cape Town is sprawling by world standards — it is that the land "
@@ -963,7 +962,6 @@ def page_compare() -> None:
     from . import capetown as ct
 
     header(
-        "01.2 · Side by side",
         "Everything that is measured for one, measured for the other",
         "The two cities are in one project because they are hard to build in for opposite "
         "reasons, and the comparison shows something neither shows alone: what kind of limit "
@@ -993,7 +991,7 @@ def page_compare() -> None:
 
     st.divider()
     figure(
-        "01", "Where the two cities differ most",
+        "Where the two cities differ most",
         "Cape Town divided by Enschede, on each measure. A bar at 1 means they are equal.",
         reads_as="The axis is logarithmic, so equal distances are equal ratios. Population is "
                  "thirty times apart and built-up land only fifteen — that gap is the density "

@@ -15,8 +15,38 @@ from .provenance import BADGE, CLASS_NOTE
 from .theme import INK_2
 
 
-def header(index: str, title: str, lede: str) -> None:
-    st.caption(index.upper())
+# The section the router is currently showing, and how many figures it has
+# drawn. Both are set from one place so that numbering cannot drift.
+#
+# It drifted badly once already. Section indices were written into each page by
+# hand, so after the report was reorganised the workbench said "07.1" at the top
+# and "Chart 14.1" over its first figure, and the population page said "04.1"
+# while the section three below it still said "11 · Simulation". Numbering that
+# is typed is numbering that goes stale; numbering that is derived cannot.
+_SECTION = {"id": "", "fig": 0}
+
+
+def begin_section(section_label: str) -> None:
+    """Called by the router before a page runs. Sets the number everything uses.
+
+    `section_label` is the menu entry, e.g. "5.2 Simulating growth to 2050";
+    the leading number is what the page furniture keys off.
+    """
+    number = section_label.split(" ", 1)[0].strip()
+    _SECTION["id"] = number if number[:1].isdigit() else ""
+    _SECTION["fig"] = 0
+
+
+def section_id() -> str:
+    return _SECTION["id"]
+
+
+def header(title: str, lede: str, index: str | None = None) -> None:
+    """The section header. The index comes from the router unless overridden."""
+    _SECTION["fig"] = 0
+    idx = index if index is not None else _SECTION["id"]
+    if idx:
+        st.caption(f"SECTION {idx}")
     st.title(title)
     st.markdown(
         f"<p style='font-size:1.05rem;line-height:1.65;max-width:62ch'>{lede}</p>",
@@ -34,7 +64,7 @@ def stats(items: list[tuple[str, str, str]]) -> None:
             st.caption(note_text)
 
 
-def figure(n: str, title: str, deck: str, reads_as: str | None = None) -> None:
+def figure(title: str, deck: str, reads_as: str | None = None) -> None:
     """A chart heading a reader can use.
 
     Three lines, each doing one job, in the order a reader needs them:
@@ -48,10 +78,18 @@ def figure(n: str, title: str, deck: str, reads_as: str | None = None) -> None:
     source line and the axis labels — four kinds of text at one size, none of
     them signalling what it was for. Whatever is left in `deck` should be short.
     `reads_as` is the sentence that tells you what you are looking at.
+
+    Figures number themselves, in order, against the section the router is
+    showing. Nothing here is typed by hand, so a chart cannot claim to be
+    "14.1" in a section headed 7.1, and inserting a figure cannot leave the
+    ones after it wrong.
     """
+    _SECTION["fig"] += 1
+    n = (f"{_SECTION['id']}.{_SECTION['fig']}" if _SECTION["id"]
+         else str(_SECTION["fig"]))
     st.markdown(
         f"<div class='fig-head'>"
-        f"<div class='fig-num'>Chart {n.lstrip('0') or n}</div>"
+        f"<div class='fig-num'>Chart {n}</div>"
         f"<div class='fig-title'>{title}</div>"
         f"<div class='fig-deck'>{deck}</div>"
         f"</div>",

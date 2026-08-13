@@ -97,7 +97,14 @@ def _controls(side: str, default_preset: str, city) -> Levers:
         model_key = st.selectbox(
             "Population model", list(MODELS), key=f"sim_{side}_model",
             format_func=lambda k: MODELS[k].label,
-            index=list(MODELS).index("logistic"))
+            # Linear rather than logistic as the default. Not because it is the
+            # better model — section 4.2 shows the seven of them disagreeing by
+            # more than a million people on Cape Town — but because a logistic
+            # fitted to Enschede's plateau predicts a small decline, and a
+            # workbench whose default setting makes every lever do nothing
+            # teaches the reader that the tool is broken rather than that the
+            # model is pessimistic.
+            index=list(MODELS).index("linear"))
         horizon = st.slider("Run to", 2030, 2070, 2050, 5, key=f"sim_{side}_hz")
         dens = st.slider("Growth absorbed by densification", 0.0, 1.0,
                          float(p["densification"]), 0.05, key=f"sim_{side}_dens",
@@ -170,9 +177,20 @@ def _run(city_name: str, lev_dict: dict):
     }
 
 
+@st.cache_data(show_spinner=False)
+def _growth_cached(city_name: str, model_key: str, horizon: int) -> float:
+    frame = _population(city_name)
+    spec = MODELS[model_key]
+    fit = fit_and_forecast(frame, spec, {p.key: p.default for p in spec.params}, horizon)
+    return float(fit.forecast["population"].iloc[-1] - frame["population"].iloc[-1])
+
+
+def _growth(city_name: str, lev: "Levers") -> float:
+    return _growth_cached(city_name, lev.model_key, lev.horizon)
+
+
 def page_simulator() -> None:
     header(
-        "07.1 · Workbench",
         "Run two futures against each other",
         f"Pick a set of decisions on the left and a different set on the right, and read the "
         f"gap. The absolute numbers in either column are close to meaningless — the grid is "
@@ -200,6 +218,20 @@ def page_simulator() -> None:
         st.info("Both scenarios are currently identical, so every difference below is zero. "
                 "Change a lever on one side.")
 
+    growth_a = _growth(city_name, a)
+    growth_b = _growth(city_name, b)
+    if max(growth_a, growth_b) <= 0:
+        caveat(
+            "The population model you picked predicts no growth",
+            f"{MODELS[a.model_key].label} projects "
+            f"{growth_a:+,.0f} people for {city.name} by {a.horizon}, so there is nothing to "
+            "allocate and every land figure below is zero. That is the model's answer, not a "
+            "failure of the simulation — a logistic curve fitted to Enschede's thirty-year "
+            "plateau saturates at roughly today's population. Pick a different population "
+            "model under <em>Adjust</em>; section 4.2 shows how far apart the seven of them "
+            "are, which is the more interesting finding.",
+            "caution")
+
     ya, frames_a, mob_a = _run(city_name, a.__dict__)
     yb, frames_b, mob_b = _run(city_name, b.__dict__)
 
@@ -224,7 +256,6 @@ def page_simulator() -> None:
     # ---- 1. land take over time -------------------------------------
     st.divider()
     figure(
-        "14.1",
         "How much land each future takes, year by year",
         "Built-up area under each scenario. Press play to watch them separate.",
         reads_as="The two lines start together because both begin from today. What matters is "
@@ -254,7 +285,6 @@ def page_simulator() -> None:
     # ---- 2. where it lands ------------------------------------------
     st.divider()
     figure(
-        "14.2",
         "Where the new building lands",
         "Cells converted from unbuilt to built by the end of each run. Blue is scenario A, "
         "orange is B, and grey is land both leave alone.",
@@ -309,7 +339,6 @@ def page_simulator() -> None:
     # ---- 3. the trade the workbench exists to show -------------------
     st.divider()
     figure(
-        "14.3",
         "Distance against driving: the trade nobody gets to avoid",
         "Each scenario as one point. Left is new building closer to the centre; down is less "
         "driving.",

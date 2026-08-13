@@ -90,7 +90,6 @@ def _agreement():
 
 def page_behaviour() -> None:
     header(
-        "12 · Behaviour",
         "How households choose",
         "Every model so far moves people around by a rule. This one lets them decide. "
         "Each household has an income and a value of its own time. Each place has a rent. "
@@ -129,7 +128,6 @@ def page_behaviour() -> None:
 
     # ---- 1. the scenario table as ranked bars -----------------------
     figure(
-        "12.1",
         "Pricing parking does more than everything else combined",
         "Change in commuting car-kilometres per household against today, under each policy.",
         reads_as="Bars to the left are less driving. The three measures together barely beat "
@@ -165,7 +163,6 @@ def page_behaviour() -> None:
 
     # ---- 2. mode split, stacked -------------------------------------
     figure(
-        "12.2",
         "Where the trips go instead",
         "Share of commute trips by mode, under each policy.",
         reads_as="Priced parking does not move people onto buses. It moves them onto bicycles, "
@@ -199,7 +196,6 @@ def page_behaviour() -> None:
 
     # ---- 3. the response curve --------------------------------------
     figure(
-        "12.3",
         "The response to a parking charge is a curve, not a slope",
         "Commuting car-kilometres per household as the charge per car trip rises.",
         reads_as="The first euro does most of the work and the fifth does almost none. "
@@ -231,7 +227,6 @@ def page_behaviour() -> None:
 
     # ---- 4. rent gradient -------------------------------------------
     figure(
-        "12.4",
         "Making driving expensive makes the middle expensive",
         "Rent by distance from the centre, before and after parking is priced.",
         reads_as="The gradient steepens. Raising the cost of the commute raises what people "
@@ -258,7 +253,6 @@ def page_behaviour() -> None:
     import streamlit_app as app
 
     figure(
-        "12.5",
         "None of it gets a dwelling to zero, and zero is the test",
         "Lifetime nitrogen from one dwelling under each policy. The bar spans two ways of "
         "attributing the model's effect to total driving; the true answer is inside it.",
@@ -366,7 +360,6 @@ def page_behaviour() -> None:
 
 def page_scaling() -> None:
     header(
-        "13 · Scale",
         "Making the model fast enough to be useful",
         "The model in the previous section costs households × locations, inside a loop that "
         "repeats until rents settle. A recent paper on very large agent simulations "
@@ -434,7 +427,6 @@ def page_scaling() -> None:
 
     # ---- 2. speed ----------------------------------------------------
     figure(
-        "13.1",
         f"After the fix, the approximation buys {at_1m['speedup']:.0f}×, not 275×",
         "Seconds to run one scenario, against the number of households, at twelve locations.",
         reads_as="Both axes are logarithmic, so a straight line is a constant growth rate and "
@@ -477,7 +469,6 @@ def page_scaling() -> None:
 
     # ---- 3. the failure, and the fix ---------------------------------
     figure(
-        "13.2",
         "A surrogate that scores perfectly can still be useless",
         "Car-kilometres against the parking charge: the full model, and two surrogates "
         "built by the same algorithm but trained on differently chosen policies.",
@@ -566,7 +557,6 @@ def page_scaling() -> None:
     # ---- 3b. where distillation actually pays -------------------------
     top = locs.iloc[-1]
     figure(
-        "13.3",
         "Where the approximation would actually earn its keep",
         "Seconds to run one scenario, against the number of *locations*, at "
         f"{4_000:,} households.",

@@ -43,19 +43,38 @@ def page_opening() -> None:
         "way past — and it is the more absolute of the two.</div>",
         unsafe_allow_html=True)
 
+    # ---- the four numbers, before anything else ----------------------
+    # An opening that states a thesis and then makes the reader scroll for the
+    # evidence is asking for trust it has not earned yet. These four are the
+    # whole argument, computed from the same series the later sections use.
+    df = compare.scorecard_frame()
+    en, ct = df.iloc[0], df.iloc[1]
+    stats([
+        ("Cape Town may build on", f"{ct['Land permitted, km²']:,.0f} km²",
+         f"Out of {ct['Municipal area, km²']:,.0f} km² of municipality — "
+         f"{ct['Land permitted, km²'] / ct['Municipal area, km²']:.0%} of the city."),
+        ("Enschede may build on", f"{en['Land permitted, km²']:,.0f} km²",
+         f"It has {en['Land physically left, km²']:,.0f} km² of land left and permission "
+         f"for none of it."),
+        ("Cape Town's runway", f"{ct['Years of growth left']:,.0f} years",
+         "Before the land it may build on is gone, at the rate it has grown for a decade."),
+        ("Enschede's runway", "0 years",
+         "For as long as the nitrogen ruling stands. Density does not help: the test is "
+         "categorical."),
+    ])
+
     st.write("")
     st.divider()
 
     # ---- the ledger: the argument as one figure ----------------------
     figure(
-        "01",
         "Every square kilometre each city has, and what happens to it",
         "Both cities run through the same ledger, from the municipal boundary down to land "
         "that may actually be built on.",
         reads_as="Read each column top to bottom. The rows remove land in order, and the last "
                  "two rows are the finding: what is physically left, and what the law allows. "
-                 "For Cape Town those two numbers are the same. For Enschede they are 65 and "
-                 "zero.",
+                 f"For Cape Town those two numbers are the same. For Enschede they are "
+                 f"{en['Land physically left, km²']:,.0f} and zero.",
     )
     compare.ledger_pair()
     provenance(
@@ -66,11 +85,13 @@ def page_opening() -> None:
 
     st.write("")
     note(
-        "This is the whole report in one figure, and it is why the two cities are worth "
-        "putting in the same document. A ledger that stopped one row earlier — at land "
-        "physically left — would score Enschede as the healthier of the two, with 65 km² in "
-        "hand against Cape Town's 251 km² for a population thirty times larger. Add the last "
-        "row and the ranking inverts. Enschede's number is not small. It is zero."
+        f"This is the whole report in one figure, and it is why the two cities are worth "
+        f"putting in the same document. A ledger that stopped one row earlier — at land "
+        f"physically left — would score Enschede as the healthier of the two, with "
+        f"{en['Land physically left, km²']:,.0f} km² in hand against Cape Town's "
+        f"{ct['Land physically left, km²']:,.0f} km² for a population "
+        f"{ct['Population'] / en['Population']:.0f} times larger. Add the last row and the "
+        f"ranking inverts. Enschede's number is not small. It is zero."
     )
 
     st.divider()
@@ -89,14 +110,13 @@ def page_opening() -> None:
                "follow. Growth rate is the last ten years of each city's own series.")
 
     st.write("")
-    df = compare.scorecard_frame()
-    en, ct = df.iloc[0], df.iloc[1]
     note(
         f"The runway figures deserve a caveat that the table cannot carry. Cape Town's "
         f"{ct['Years of growth left']:.0f} years assumes it keeps building at today's density "
         f"of {ct['Density per built km²']:,.0f} people per built square kilometre — already "
         f"higher than Enschede's {en['Density per built km²']:,.0f} — and that every one of "
-        f"the remaining 251 km² is usable, which it is not: much of it is steep, sandy, "
+        f"the remaining {ct['Land permitted, km²']:,.0f} km² is usable, which it is not: "
+        f"much of it is steep, sandy, "
         f"or over the aquifer. The true figure is shorter. Enschede's is zero years for as "
         f"long as the nitrogen ruling stands, and no amount of density changes it, because "
         f"the test is categorical rather than quantitative."
@@ -113,7 +133,8 @@ def page_opening() -> None:
             "You can draw it, so you can plan around it",
             "A protected area has an edge. Land on one side is available and land on the "
             "other is not, and everyone can see which is which. That makes the constraint "
-            "brutal — 251 km² is all there is — but legible. You can price it, trade it, "
+            f"brutal — {ct['Land permitted, km²']:,.0f} km² is all there is — but legible. "
+            "You can price it, trade it, "
             "densify inside it, and argue about moving the line. Every one of those is a "
             "normal planning activity.",
             SERIES[1])
