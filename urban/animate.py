@@ -122,11 +122,14 @@ def lines_upto(df: pd.DataFrame, x: str, y: str, entity: str, upto, *,
     entities = list(df[entity].unique())
     rng = _range_for(entities, colours)
 
-    x_scale = alt.Scale(domain=list(x_domain)) if x_domain else alt.Scale()
+    # nice=False, or Vega rounds 1950–2024 outward to 1950–2030 and the chart
+    # implies six years of data that do not exist.
+    x_scale = (alt.Scale(domain=list(x_domain), nice=False) if x_domain
+               else alt.Scale(nice=False))
     y_scale = alt.Scale(type="log") if log else alt.Scale(zero=False)
     if y_domain:
-        y_scale = alt.Scale(type="log", domain=list(y_domain)) if log \
-            else alt.Scale(domain=list(y_domain), nice=False)
+        y_scale = (alt.Scale(type="log", domain=list(y_domain), nice=False) if log
+                   else alt.Scale(domain=list(y_domain), nice=False))
 
     base = alt.Chart(shown).encode(
         x=alt.X(f"{x}:Q", title=x_title, scale=x_scale,
