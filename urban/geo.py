@@ -25,8 +25,19 @@ import pydeck as pdk
 
 from .theme import SERIES
 
-OSM_TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-OSM_ATTRIBUTION = "Basemap © OpenStreetMap contributors, ODbL."
+# A clean, minimal basemap rather than raw OpenStreetMap raster. The default
+# OSM tiles carry every street name and place label baked into the image,
+# which is noisy, ugly, and fights the data layers drawn on top of it. CartoDB
+# Positron is a desaturated, label-light style derived from OSM data: the
+# streets and blocks are there as pale geometry, but the text is gone, so the
+# coloured layers and the hand-placed TextLayer labels are what read. No API
+# key and no account, like the OSM tiles it replaces.
+BASEMAP_TILES = "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
+BASEMAP_ATTRIBUTION = (
+    "Basemap © CARTO · © OpenStreetMap contributors, ODbL."
+)
+# Kept for the attribution strings already embedded in page captions below.
+OSM_ATTRIBUTION = BASEMAP_ATTRIBUTION
 
 
 def _rgb(hex_colour: str, alpha: int = 255) -> list[int]:
@@ -93,19 +104,24 @@ KIND_COLOUR = {
 # ---------------------------------------------------------------------
 
 def _tile_layer() -> pdk.Layer:
-    """The OpenStreetMap raster basemap.
+    """The basemap: CartoDB Positron, a clean label-light raster style.
 
     A raw tile layer rather than a hosted vector style, so the map needs no API
     key and no account — which matters for something meant to be forked and run
-    by someone else.
+    by someone else. Positron keeps the street and block geometry as pale lines
+    but drops the street-name and place-label text that made the raw OSM tiles
+    noisy, so the data layers and the hand-placed labels are what the eye lands
+    on. The tiles sit at near-full opacity because the style is already pale;
+    the previous 0.62 was needed to push the cluttered OSM tiles back, and is
+    no longer necessary.
     """
     return pdk.Layer(
         "TileLayer",
-        data=OSM_TILES,
+        data=BASEMAP_TILES,
         min_zoom=0,
-        max_zoom=19,
+        max_zoom=20,
         tile_size=256,
-        opacity=0.62,  # tiles recede so the data layers read on top of them
+        opacity=0.92,
     )
 
 
