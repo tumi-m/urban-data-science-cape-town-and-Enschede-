@@ -223,13 +223,53 @@ def page_population() -> None:
     st.divider()
 
     # ---- the rest of the page runs per selected city -----------------
+    contexts = []
     for city in selected:
         frame, series = _population(city.name)
         if both_mode:
             compare.city_header(city)
         _population_detail(city, frame, series, both_mode)
+        contexts.append(_population_context(city, frame, series, both_mode))
         if both_mode and city is not selected[-1]:
             st.divider()
+
+    # The assistant runs once for the page, not per city, so its widget key
+    # is unique. In both-cities mode it sees both contexts side by side.
+    llm.assistant_box("\n\n".join(contexts), key="population_llm",
+                      label="Ask the population section")
+
+
+def _population_context(city, frame, series, both_mode) -> str:
+    """One city's population numbers and claims, as a text block for the LLM."""
+    first, last = frame.iloc[0], frame.iloc[-1]
+    slowest = _flattest_stretch(frame)
+    ctx_lines = [f"SECTION: Population, 1950 to now — {city.name}."]
+    ctx_lines.append(f"Series: {int(first['year'])}–{int(last['year'])}, "
+                     f"{first['population']:,.0f} → {last['population']:,.0f} "
+                     f"({last['population'] / first['population'] - 1:+.0%}). "
+                     f"Provenance: {series.klass}.")
+    if both_mode:
+        ctx_lines.append("Showing both cities indexed to 100 in 1950: Cape Town ends near 780, "
+                         "Enschede near 155 (after a thirty-year plateau).")
+    ctx_lines.append(f"Slowest 20-year stretch for {city.name}: {slowest['start']}–"
+                     f"{slowest['end']} ({slowest['growth'] * 100:+.0f}%). For Enschede that "
+                     "recovers the textile collapse; for Cape Town it is the least-fast part of "
+                     "an unbroken climb.")
+    if not both_mode and city.key == "enschede":
+        ctx_lines.append("COMPONENTS OF CHANGE (Enschede only): natural increase (births−deaths) "
+                         "fell from ~+2,000/yr to marginal; net domestic migration persistently "
+                         "negative (Enschede trains graduates, the Randstad hires them); what "
+                         "holds the total up since the 1990s is international migration alone — "
+                         "the most policy-sensitive component.")
+        ctx_lines.append("DENSITY: gross (per km² of municipality) vs built-up (per km² of urban "
+                         "fabric) diverge — population rose while the land it occupies rose "
+                         "faster. That divergence is the definition of sprawl, and a gross-density "
+                         "series cannot show it.")
+    if not both_mode and city.key == "cape_town":
+        ctx_lines.append("Cape Town's shape is one curve that never bends — the opposite of "
+                         "Enschede's three regimes. The components-of-change decomposition is "
+                         "missing for Cape Town (no annual series wired in; not faked).")
+    return "\n".join(ctx_lines)
 
 
 def _population_detail(city, frame, series, both_mode: bool) -> None:
@@ -914,6 +954,34 @@ def page_simulation() -> None:
         "that is the honest next step — but it needs the real register, the real valuation file "
         "and the real travel survey before it produces anything but a prettier version of this."
     )
+
+    # ---- grounded assistant ------------------------------------------
+    context = (
+        f"SECTION: Predicting development and simulating growth — {city.name}.\n"
+        f"EVERYTHING ON THIS PAGE IS SYNTHETIC. The grid is generated, the development labels "
+        f"were produced from the same features the model then learns from, and the value surface "
+        f"is a stated hedonic form. A good score measures whether the learner recovers "
+        f"assumptions put there on purpose — NOT evidence about {city.name}. [synthetic]\n\n"
+        f"DEVELOPMENT CLASSIFIER ({model.label}): accuracy {m['Accuracy']:.3f} on {m['Test cells']:,} "
+        f"held-out cells; ROC AUC {m['ROC AUC']:.3f}; Brier {m['Brier score']:.4f}; base rate "
+        f"{m['Base rate']:.2f}. The probability is used to allocate, not to classify, so Brier "
+        f"(calibration) matters more than accuracy.\n\n"
+        f"GROWTH SIMULATION: a constrained cellular automaton allocates projected growth year by "
+        f"year. Densification absorbs {0.6*100:.0f}% (default), the rest converts unbuilt land in "
+        f"order of development probability. Two runs differ in whether the constraint mask is "
+        f"respected.\n\n"
+        f"THE ONLY DEFENSIBLE OUTPUT: the DIFFERENCE between the two runs (extra km² converted "
+        f"without the mask). Both share every assumption except one, so the synthetic inputs "
+        f"cancel. The level is an artefact of the assumptions; the difference is not. This is the "
+        f"general principle for simulation of this kind.\n\n"
+        f"WHAT IT IS: a transparent transition rule, every parameter on screen, useful for asking "
+        f"where a constraint pushes development.\n"
+        f"WHAT IT IS NOT: a prediction. No land market, no developer behaviour, no consent "
+        f"process, no price→demand feedback. The honest next step is an agent-based model "
+        f"(UrbanSim lineage) — but it needs the real register, valuation file and travel survey."
+    )
+    llm.assistant_box(context, key="development_llm",
+                      label="Ask the development section")
 
 
 # =====================================================================

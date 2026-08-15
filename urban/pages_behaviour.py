@@ -18,6 +18,7 @@ import pandas as pd
 import streamlit as st
 
 from . import behaviour as bh
+from . import llm
 from . import owid
 from . import society as so
 from .theme import GRID, INK, INK_2, INK_3, SERIES, SURFACE, style
@@ -352,6 +353,37 @@ def page_behaviour() -> None:
         "the twelve concentric rings are a caricature of a city that has a ridge running "
         "through it. Fitting on ODiN would fix the first; the rest need a real network."
     )
+
+    # ---- grounded assistant ------------------------------------------
+    context = (
+        "SECTION: How households choose — a mode-choice and location model.\n"
+        "A standard random-utility model: McFadden discrete choice for mode, Alonso-Muth-Mills "
+        "bid-rent for location, cleared numerically until rents match demand. Constants "
+        "calibrated to reproduce an assumed ~45% car / 30% bicycle commuting split. SYNTHETIC "
+        "households (incomes and value-of-time from the travel-choice literature, not Enschede "
+        "measurements). [synthetic — direction and rough size worth something; levels are not]\n\n"
+        f"BASE CASE: car share {base['Car share']:.0%} of commute trips; {base['Car km per household']:,.0f} "
+        f"car-km/household/yr.\n"
+        f"BIGGEST CUT: '{best['Scenario']}' → {best['vs today']:.0%} of today's car-km.\n"
+        f"COUNTERFACTUAL: '{worst['Scenario']}' → {worst['vs today']:+.0%} (cheaper motoring).\n\n"
+        "KEY FINDINGS:\n"
+        "- Pricing parking (~€2.50/trip) does more than e-bike subsidy and better transit "
+        "COMBINED — because once the car has lost, the other two have nothing left to win.\n"
+        "- The response to a parking charge is a curve, not a slope: the first euro does most "
+        "of the work, the fifth almost none.\n"
+        "- Priced parking moves people onto BICYCLES, not buses (a flat city with a 4 km median "
+        "commute — the bus competes with the bike, not the car).\n"
+        "- Cheaper motoring makes things worse under either assumption about non-commute trips.\n"
+        "- The ordering survives the uncertainty; the levels do not. Ranking policies is what "
+        "the ranking is for.\n\n"
+        "NITROGEN LINK: car-km feed into the nitrogen account (section 3.1). A parking norm IS "
+        "an emissions instrument.\n\n"
+        "LIMITS: one trip purpose, no car ownership decision, no freight, no through traffic, "
+        "12 concentric rings caricature a city with a ridge. Fitting on ODiN (Dutch national "
+        "travel survey) would fix the constants; the rest need a real network."
+    )
+    llm.assistant_box(context, key="behaviour_llm",
+                      label="Ask the behaviour section")
 
 
 # ---------------------------------------------------------------------

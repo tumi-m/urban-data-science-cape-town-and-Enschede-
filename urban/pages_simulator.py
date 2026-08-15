@@ -39,6 +39,7 @@ from . import animate
 from . import behaviour as bh
 from . import cities
 from . import compare
+from . import llm
 from . import owid
 from . import spatial as sp
 from .forecast import MODELS, fit_and_forecast
@@ -435,3 +436,39 @@ def _simulator_body(city) -> None:
         "assuming they describe the same place — which they only do because both were built to. "
         "The difference between two runs is defensible. Either column on its own is not."
     )
+
+    # ---- grounded assistant ------------------------------------------
+    context = (
+        f"SECTION: Workbench — run two futures against each other ({city.name}).\n"
+        f"This is NOT a forecast. It prices one decision against another under a stated rule. "
+        f"The grid is synthetic, labels generated from the same features the model learns from, "
+        f"travel model on invented households. The absolute numbers in either column are close to "
+        f"meaningless; the DIFFERENCE is defensible because the invented parts are identical on "
+        f"both sides and cancel. [synthetic]\n\n"
+        f"SCENARIO A ({a.label}): population model {MODELS[a.model_key].label}, run to {a.horizon}; "
+        f"densification {a.densification:.0%}, station weighting {a.station_pull:.1f}, density "
+        f"{a.persons_per_ha:.0f} persons/ha, constraints "
+        f"{'respected' if a.respect_constraints else 'ignored'}; parking €{a.parking:.2f}/trip, "
+        f"transit {a.transit:.2f}x, e-bike €{a.ebike:.0f}/yr.\n"
+        f"SCENARIO B ({b.label}): population model {MODELS[b.model_key].label}, run to {b.horizon}; "
+        f"densification {b.densification:.0%}, station weighting {b.station_pull:.1f}, density "
+        f"{b.persons_per_ha:.0f} persons/ha, constraints "
+        f"{'respected' if b.respect_constraints else 'ignored'}; parking €{b.parking:.2f}/trip, "
+        f"transit {b.transit:.2f}x, e-bike €{b.ebike:.0f}/yr.\n\n"
+        f"RESULTS (A → B):\n"
+        f"- Land converted: {land_a:+,.1f} → {land_b:+,.1f} km².\n"
+        f"- New building mean distance from centre: {dist_a:,.1f} → {dist_b:,.1f} km "
+        f"(the constraint moves WHERE, not HOW MUCH).\n"
+        f"- Car-km per household: {mob_a['car_km']:,.0f} → {mob_b['car_km']:,.0f} "
+        f"({(mob_b['car_km'] / max(mob_a['car_km'], 1e-9) - 1) * 100:+.0f}%).\n"
+        f"- NOx kg/household/yr: {mob_a['nox_kg']:.3f} → {mob_b['nox_kg']:.3f}.\n"
+        f"- Car share: {mob_a['car_share']:.1%} → {mob_b['car_share']:.1%}.\n\n"
+        f"KEY FINDING: switching the constraints off does NOT change how much land is converted "
+        f"(the population needing housing is the same) — it changes how far out the new building "
+        f"sits. In Cape Town the protected land is close in, so lifting protection pulls "
+        f"development from ~20 km out to ~5 km. That distance, not any hectare count, is what the "
+        f"constraint costs. The border, nitrogen and parking levers all act through car-km into "
+        f"the nitrogen account."
+    )
+    llm.assistant_box(context, key="simulator_llm",
+                      label="Ask the workbench")

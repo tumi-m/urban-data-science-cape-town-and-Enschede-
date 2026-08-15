@@ -664,6 +664,40 @@ def page_nitrogen() -> None:
         "whose promoters can least carry that overhead."
     )
 
+    context = (
+        f"SECTION: Nitrogen — why the allowance is zero.\n"
+        f"Since a 2019 court ruling, a project adding nitrogen to an already-overloaded habitat "
+        f"gets NO allowance — not a small one, none. What limits building in Enschede is a "
+        f"chemical measurement, not hectares.\n\n"
+        f"THE RECEPTOR: Aamsveen raised bog, on Enschede's own edge. Critical value "
+        f"(kdw): {bog['kdw']:,} mol N/ha/yr — the lowest tolerance of any Dutch habitat. "
+        f"Background deposition the region actually delivers: {BACKGROUND_DEPOSITION:,} — "
+        f"the bog is ~{BACKGROUND_DEPOSITION / bog['kdw']:.0f}x over its limit before any "
+        f"project is proposed. [official, RIVM/LVVN]\n"
+        f"Five of six habitats get more nitrogen than they can take.\n\n"
+        f"THE RULE: once a habitat is over its critical value, the legal test becomes whether "
+        f"a project adds ANYTHING (categorical, not 'how much'). A project must round to zero "
+        f"on the official calculator. Categorical tests do not respond to being slightly better.\n\n"
+        f"LIFETIME NOx OF ONE DWELLING (~{baseline:.0f} kg over 50 years, emission side only):\n"
+        f"- Construction plant: {CONSTRUCTION_NOX_KG:.0f} kg = {construction_share * 100:.0f}%.\n"
+        f"- Traffic the home attracts over 50 years: the rest (~{(1-construction_share)*100:.0f}%).\n"
+        f"- Putting the home where residents drive half as much removes "
+        f"{location_only * 100:.0f}% — ~{location_only / construction_share:.0f}x as much as "
+        f"electrifying the plant ({construction_share * 100:.0f}%).\n"
+        f"- Both together: {baseline:.0f} kg → {best_case:.0f} kg, a "
+        f"{(1 - best_case / baseline) * 100:.0f}% reduction, no change to the building itself. "
+        f"[derived, CBS/RIVM]\n"
+        f"No dispersion model is run here — that is what the official calculator (AERIUS) does, "
+        f"and an imitation would be dangerous. The ratio between construction and traffic survives "
+        f"any dispersion assumption because both disperse from broadly the same place.\n\n"
+        f"CONCLUSIONS: (1) The nitrogen decision and the parking/location decision are the same "
+        f"decision — a parking norm is an emissions instrument. (2) Where a threshold has no lower "
+        f"bound, compliance cost is dominated by modelling and legal exposure, not abatement, "
+        f"which favours large applicants — and the housing most needed is promoted by those who "
+        f"can least carry that overhead."
+    )
+    llm.assistant_box(context, key="nitrogen_llm", label="Ask the nitrogen section")
+
 
 def page_mobility() -> None:
     m = MODES.set_index("id")
@@ -764,6 +798,34 @@ def page_mobility() -> None:
          "rounding error. This is why the assisted bicycle is a different proposition in Enschede "
          "than in the west of the country: elsewhere it buys speed on ground that was already "
          "ridable, and here it removes a barrier that exists.")
+
+    context = (
+        f"SECTION: How much energy each way of travelling uses.\n"
+        f"The measure is energy spent moving one person one kilometre (passenger-km per kWh), "
+        f"not vehicles per hour. The best option is ~{ratio:.0f}x better than the worst. "
+        f"[engineering, textbook values + CBS]\n\n"
+        f"THE ENERGY LADDER (p-km per kWh, log scale):\n"
+        f"- Electric bicycle: {m.loc['ebike','pkm_per_kwh']:.0f} (11 Wh/km from battery).\n"
+        f"- Battery electric car: {m.loc['bev','pkm_per_kwh']:.0f}.\n"
+        f"- Petrol car: {m.loc['ice','pkm_per_kwh']:.1f} (7 l/100km, 1.35 occupancy).\n"
+        f"- E-bike is {ratio:.0f}x the petrol car; {bev_ratio:.0f}x a battery car (electrifying "
+        f"the car closes part of the gap, not the part from moving 1.5 tonnes).\n\n"
+        f"UPSTREAM: held apart from the ladder deliberately — folding them in makes a comparison "
+        f"unfalsifiable. Applying the food multiplier (~6x) costs the unassisted bicycle its "
+        f"place above the e-bike, but the multiplier assumes food intake rises with effort (for "
+        f"most riders it does not) and the assisted rider is still pedalling, so both corrections "
+        f"narrow but do not reverse the gap.\n\n"
+        f"ENERGY vs SPACE: the modes fall along a diagonal — energy wasters also waste road "
+        f"space. In a city bounded by a settlement edge, nature network and a national border, "
+        f"the mode that wastes energy is the same mode that wastes the land there is none of. "
+        f"One constraint measured twice.\n\n"
+        f"THE RIDGE: Enschede sits on an ice-pushed ridge (~{ascent} m ascent west→east). "
+        f"A 30 m climb costs a rider ~{metabolic:.0f} Wh of food energy but the motor only "
+        f"~{battery:.1f} Wh — under {battery / EBIKE_WH_PER_KM:.1f} km of e-bike range. So "
+        f"electrical assistance removes a barrier that, uniquely in the Netherlands, actually "
+        f"exists here. [official, AHN elevation]"
+    )
+    llm.assistant_box(context, key="mobility_llm", label="Ask the energy section")
 
 
 def page_access() -> None:
@@ -959,6 +1021,45 @@ def page_access() -> None:
         "spatial answer — the same failure this platform documents in nitrogen, in noise and in "
         "renewable siting. The tool draws polygons, so the problem arrives shaped like a polygon."
     )
+
+    context = (
+        f"SECTION: How many people can reach a station.\n"
+        f"The usual measure — share of area within 800 m walk of a station — hides two "
+        f"assumptions: that 800 m is a fact about the place rather than a choice, and that land "
+        f"is the right thing to count. Both are wrong. [derived, ProRail/NS + CBS + standard "
+        f"urban-economics form]\n\n"
+        f"THE r² ARITHMETIC: a shed is a disc, area = π r². Tripling reach multiplies catchment "
+        f"by 9, not 3. Most of a 'coverage percentage' describes the choice of radius, not the "
+        f"rail network.\n"
+        f"- Reach on foot (0.8 km): {shed_area_km2(walk['radius_km']):.1f} km² per station.\n"
+        f"- By bicycle (3.0 km): {shed_area_km2(bike['radius_km']):.1f} km² — "
+        f"{shed_area_km2(bike['radius_km']) / shed_area_km2(walk['radius_km']):.0f}x the walking area.\n"
+        f"- By e-bike (5.0 km): {shed_area_km2(ebike['radius_km']):.0f} km².\n"
+        f"Enschede has {len(STATIONS)} stations.\n\n"
+        f"COUNTING LAND vs PEOPLE: at the current reach {reach:.2f} km, "
+        f"{cov['land'] * 100:.0f}% of built-up land is covered but {cov['population'] * 100:.0f}% "
+        f"of residents are — land undercounts access because the central station sits on the "
+        f"density peak and edge hectares are nearly empty. At a real walk: land "
+        f"{walk_cov['land'] * 100:.1f}% vs residents {walk_cov['population'] * 100:.1f}% "
+        f"(understates by about a fifth).\n\n"
+        f"CIRCUITY: a buffer assumes streets run straight at the station. Real network/straight "
+        f"ratio is 1.2–1.4; shed goes as r² so real catchment is the circle ÷ circuity² (51–69% "
+        f"of the buffer's claim).\n\n"
+        f"ENSCHEDE'S THREE STATIONS: on foot {walk_cov['land'] * 100:.0f}% of land / "
+        f"{walk_cov['population'] * 100:.0f}% of residents; by bicycle "
+        f"{bike_cov['population'] * 100:.0f}% of residents. Nothing was built — only the assumed "
+        f"radius changed, and the radius was never a property of the rail network.\n\n"
+        f"CAPE TOWN: {CT_BUFFER_KM2} km² of 800 m buffers cover "
+        f"{CT_BUFFER_KM2 / CT_EDGE_KM2 * 100:.0f}% of the {CT_EDGE_KM2} km² edge. At a cycling "
+        f"radius the sheds sum to ~{CT_STATION_EQUIVALENTS * shed_area_km2(3.0) / CT_EDGE_KM2:.1f}x "
+        f"the edge (summed, not unioned — overlap means the real union is smaller). Not short of "
+        f"stations; short of a way to reach them. [estimate, restated as published]\n\n"
+        f"LIMITS: summed sheds are an upper bound; density is a modelled exponential, not a "
+        f"measured surface; a shed is not a service. Metrorail ridership fell ~10x on the worst "
+        f"corridors (vandalism, cable theft) — 20% coverage is moot when trains don't come. A "
+        f"reliability constraint was measured as a spatial one."
+    )
+    llm.assistant_box(context, key="access_llm", label="Ask the access section")
 
 
 def page_border() -> None:
@@ -1260,6 +1361,34 @@ def page_energy() -> None:
         f"problems and the third is a contract problem. None is a spatial problem, and none is what "
         f"the regional search-area process is set up to solve."
     )
+
+    context = (
+        f"SECTION: How much land renewable energy needs.\n"
+        f"Regional renewable target: {RES_TARGET_TWH} TWh/year across the 14 Twente "
+        f"municipalities. The argument converts the target into land actually taken out of use. "
+        f"[derived, RES Twente + textbook values]\n\n"
+        f"THE TWO TECHNOLOGIES:\n"
+        f"- Onshore wind: {units_for_target(t.loc['wind']):.0f} turbines for the target, spread "
+        f"over {wind_gross:.0f} km² but only {wind_excl:.2f} km² actually taken out of use "
+        f"(farming carries on underneath). Stopped by FIELDS — noise, shadow flicker, radar "
+        f"sightlines, habitat — none of which is a land requirement; several are tractable "
+        f"engineering problems handled as spatial ones (radar = signal processing turned into a "
+        f"map).\n"
+        f"- Ground-mounted solar: {solar_excl:.0f} km² taken out of use permanently (all of it) "
+        f"— ~{solar_excl / LAND_AREA_KM2 * 100:.0f}% of Enschede's whole area, quoted for scale. "
+        f"Stopped by a POLYGON, and a polygon can be redrawn.\n"
+        f"- Solar uses ~{solar_excl / wind_excl:.0f}x more land than wind for the same energy.\n\n"
+        f"THE TRAP: a search-area process converges on solar (the land-hungry option) not because "
+        f"it is better but because its obstacle is the negotiable kind. The scarce resource is "
+        f"being spent to avoid the reducible constraint.\n\n"
+        f"ROOFTOP SOLAR (no land cost): Enschede's roofs ≈ {rooftop:.2f} TWh/yr — "
+        f"{rooftop / RES_TARGET_TWH * 100:.0f}% of the regional target from one municipality, on "
+        f"existing structure. Not stopped by land or consent but by transformer capacity, roof "
+        f"structural capacity, and the split incentive between roof owner and bill payer. Two "
+        f"capital problems and one contract problem — none spatial, none what the search-area "
+        f"process solves."
+    )
+    llm.assistant_box(context, key="energy_llm", label="Ask the energy section")
 
 
 def page_method() -> None:
