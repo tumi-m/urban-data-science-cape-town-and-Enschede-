@@ -230,3 +230,89 @@ def legend_html(entries: list[tuple[str, str]]) -> str:
         f'<div style="display:flex;flex-wrap:wrap;gap:4px 0;margin:0.55rem 0 0.2rem 0">'
         f'{items}</div>'
     )
+
+
+def gravity_flow_map(flows: pd.DataFrame, *,
+                     centre: tuple[float, float] = ENSCHEDE_CENTRE,
+                     zoom: float = 8.4, height: int = 520) -> pdk.Deck:
+    """The border catchment as a flow map.
+
+    One arc per surrounding town, drawn from the origin city out to it. The
+    arc's weight and colour carry the interaction the gravity model assigns to
+    that link: thick and warm where the pull is strong, thin and cool where
+    distance or the border has thinned it. Arcs that cross the frontier are
+    drawn in the warm ramp so the reader can see exactly which links the border
+    is thinning — Gronau's arc, close and heavy when the border is open, is the
+    one that collapses as permeability falls.
+    """
+    df = flows.copy()
+    # Normalise flow to a 1–14 px width and split colour by whether the link
+    # crosses the border. The scale is relative to the strongest link, so the
+    # map reads the same at any permeability.
+    fmax = max(float(df["flow"].max()), 1e-9)
+    df["width"] = 1.0 + 13.0 * df["flow"] / fmax
+    df["arc_colour"] = df.apply(
+        lambda r: ([*ORANGE[:3], 200] if r["crosses_border"] else [*BLUE[:3], 170]),
+        axis=1)
+    df["town_colour"] = df.apply(
+        lambda r: (ORANGE if r["crosses_border"] else BLUE), axis=1)
+
+    arcs = pdk.Layer(
+        "ArcLayer",
+        data=df,
+        get_source_position=["o_lon", "o_lat"],
+        get_target_position=["lon", "lat"],
+        get_width="width",
+        get_source_color="arc_colour",
+        get_target_color="arc_colour",
+        pickable=True,
+        auto_highlight=True,
+    )
+    towns = pdk.Layer(
+        "ScatterplotLayer",
+        data=df,
+        get_position=["lon", "lat"],
+        get_radius=900,
+        radius_min_pixels=6,
+        get_fill_color="town_colour",
+        get_line_color=[255, 255, 255, 235],
+        line_width_min_pixels=2,
+        stroked=True,
+        pickable=True,
+    )
+    labels = pdk.Layer(
+        "TextLayer",
+        data=df,
+        get_position=["lon", "lat"],
+        get_text="name",
+        get_size=12,
+        get_color=[20, 20, 20, 235],
+        get_pixel_offset=[0, -16],
+        background=True,
+        get_background_color=[252, 252, 251, 205],
+        background_padding=[4, 2, 4, 2],
+        size_units="pixels",
+    )
+    origin_df = df.head(1)[["o_lon", "o_lat"]].rename(
+        columns={"o_lon": "lon", "o_lat": "lat"})
+    origin_pt = pdk.Layer(
+        "ScatterplotLayer",
+        data=origin_df,
+        get_position=["lon", "lat"],
+        get_radius=1300,
+        radius_min_pixels=9,
+        get_fill_color=[11, 11, 11, 255],
+        get_line_color=[255, 255, 255, 255],
+        line_width_min_pixels=2,
+        stroked=True,
+        pickable=False,
+    )
+    return pdk.Deck(
+        layers=[_tile_layer(), arcs, towns, labels, origin_pt],
+        initial_view_state=pdk.ViewState(
+            latitude=centre[0], longitude=centre[1], zoom=zoom, pitch=0),
+        tooltip={"text": "{name}\npopulation {population}\nflow {flow}"},
+        height=height,
+        map_provider=None,
+        map_style=None,
+    )

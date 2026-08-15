@@ -337,10 +337,12 @@ def simulate(policy: Policy, n_households: int = 3000, seed: int = 0,
     vot = hh["vot"].to_numpy()[:, None]
     budget = hh["rent_budget"].to_numpy()[:, None]
 
-    # Annual commuting cost of living in each ring, per household.
-    commute_cost = np.array([
-        [_annual_commute_cost(d, v[0], policy) for d in dist] for v in vot
-    ])
+    # Annual commuting cost of living in each ring, per household. Computed as
+    # one vectorised logsumexp over the (households × rings × modes) utility
+    # cube rather than a Python loop over the scalar function: identical
+    # arithmetic, but the double loop was the single slowest statement in the
+    # project once a slider drag re-ran the whole page.
+    commute_cost = _annual_commute_cost_matrix(dist, vot, policy)
 
     history, converged, it = [], False, 0
     for it in range(1, max_iter + 1):
@@ -408,6 +410,22 @@ def _annual_commute_cost(distance_km: float, vot: float, policy: Policy) -> floa
     """
     u = np.array(list(mode_utilities(distance_km, vot, policy).values()))
     logsum = LOGIT_SCALE * np.log(np.exp((u - u.max()) / LOGIT_SCALE).sum()) + u.max()
+    trips = WORKING_DAYS * TRIPS_PER_DAY
+    return -logsum * trips
+
+
+def _annual_commute_cost_matrix(distance_km, vot, policy: Policy) -> np.ndarray:
+    """`_annual_commute_cost` over a distance × value-of-time grid, vectorised.
+
+    The mode-choice logsumexp broadcasts over both axes at once, so an
+    n-household × n-ring cost surface is one array operation instead of
+    n × m Python calls. Bit-for-bit the same formula as the scalar version;
+    only the looping is gone.
+    """
+    u = mode_utilities_array(distance_km, vot, policy)      # (..., n_modes)
+    z = u / LOGIT_SCALE
+    z = z - z.max(axis=-1, keepdims=True)
+    logsum = LOGIT_SCALE * np.log(np.exp(z).sum(axis=-1)) + u.max(axis=-1)
     trips = WORKING_DAYS * TRIPS_PER_DAY
     return -logsum * trips
 

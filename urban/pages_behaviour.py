@@ -154,7 +154,7 @@ def page_behaviour() -> None:
         strokeWidth=1, color=INK_3).encode(x="x:Q")
     st.altair_chart(
         style(alt.layer(bars, labels, zero).properties(height=200)),
-        use_container_width=True, key="beh_bars")
+        width="stretch", key="beh_bars")
     provenance("synthetic",
                "Multinomial logit mode choice with constants calibrated to a 45% car / 30% "
                "bicycle commuting split; bid-rent location choice cleared numerically.")
@@ -188,7 +188,7 @@ def page_behaviour() -> None:
         )
     )
     st.altair_chart(style(chart.properties(height=230)),
-                    use_container_width=True, key="beh_modes")
+                    width="stretch", key="beh_modes")
     provenance("synthetic", "Logit mode shares, weighted by where the market clearing put "
                             "each income group.")
 
@@ -209,7 +209,7 @@ def page_behaviour() -> None:
                          x_title="Parking charge, € per car trip",
                          y_title="Car-km per household per year",
                          y_format=",.0f", x_format="$.2f", zero=True, height=300),
-        use_container_width=True, key="beh_sweep")
+        width="stretch", key="beh_sweep")
     provenance("synthetic", "Full model re-run at each charge, 1,200 households.")
 
     with st.expander("Why the curve bends"):
@@ -240,7 +240,7 @@ def page_behaviour() -> None:
             two, "km_to_centre", "rent", "scenario",
             x_title="Km from the centre", y_title="Rent, € per year",
             y_format=",.0f", x_format=".1f", height=300),
-        use_container_width=True, key="beh_rent")
+        width="stretch", key="beh_rent")
     provenance("synthetic", "Numerical bid-rent clearing, 12 concentric rings, "
                             "capacity from ring area at today's permitted density.")
 
@@ -314,7 +314,7 @@ def page_behaviour() -> None:
         .mark_rule(strokeDash=[4, 3], strokeWidth=1, color=INK_3).encode(x="x:Q")
     )
     st.altair_chart(style(alt.layer(span, dots, today).properties(height=230)),
-                    use_container_width=True, key="beh_nitrogen")
+                    width="stretch", key="beh_nitrogen")
     provenance("synthetic",
                "Policy response from the model above; nitrogen account and the 12,000 "
                "vehicle-km per dwelling from the nitrogen section.")
@@ -460,7 +460,7 @@ def page_scaling() -> None:
         )
     )
     st.altair_chart(style(line.properties(height=300)),
-                    use_container_width=True, key="soc_scale")
+                    width="stretch", key="soc_scale")
     provenance("derived", "Wall-clock timing of both engines in this environment, "
                           "single-threaded.")
     values_table(scal.round(3))
@@ -505,7 +505,7 @@ def page_scaling() -> None:
         )
     )
     st.altair_chart(style(cov_line.properties(height=330)),
-                    use_container_width=True, key="soc_coverage")
+                    width="stretch", key="soc_coverage")
     provenance("synthetic", "Full model re-run at each charge on 1,000 households; both "
                             "surrogates asked the same question.")
     values_table(cov.pivot(index="parking_charge", columns="engine",
@@ -590,7 +590,7 @@ def page_scaling() -> None:
         )
     )
     st.altair_chart(style(loc_line.properties(height=300)),
-                    use_container_width=True, key="soc_locations")
+                    width="stretch", key="soc_locations")
     provenance("derived", "Same timing method, holding households fixed and varying how "
                           "finely the city is divided.")
     values_table(locs.round(3))

@@ -401,3 +401,126 @@ def compare_all(history: pd.DataFrame, horizon_year: int = 2050,
             "Note": fit.warnings[0][:80] + "…" if fit.warnings else "",
         })
     return pd.DataFrame(rows)
+
+
+# ---------------------------------------------------------------------
+# Calibrated uncertainty, for every family
+# ---------------------------------------------------------------------
+#
+# Only the Gaussian process reports a predictive standard deviation, so only
+# its chart carries a band — and that band is conditional on the kernel being
+# right, which is exactly the assumption the comparison table exists to doubt.
+# A split-conformal interval needs no such assumption: it is calibrated on the
+# model's own held-out errors, so a family that has been wrong lately gets a
+# wide band whatever it believes about itself.
+
+def conformal_band(fit: Fit, alpha: float = 0.10,
+                   growth: float = 0.6) -> tuple[np.ndarray, np.ndarray]:
+    """A distribution-free interval around the projection.
+
+    Calibration scores are the absolute errors on the backtest tail — the one
+    part of the data the fitted model has never seen. The (1 - alpha) quantile
+    of those errors, with the finite-sample correction, is the half-width. It
+    is widened with distance ahead by a square-root factor, because a constant
+    band claims a precision about the far future that a short smooth series
+    does not contain.
+
+    This is honest in a specific, limited way and the page says so: it is
+    calibrated to how wrong this model was about the recent past. It is *not*
+    a statement about whether the model's functional form will keep holding,
+    which is the larger uncertainty and the one no interval can carry.
+    """
+    errors = np.abs(fit.backtest["actual"].to_numpy(dtype=float)
+                    - fit.backtest["predicted"].to_numpy(dtype=float))
+    n = len(errors)
+    if n == 0:
+        zeros = np.zeros(len(fit.forecast))
+        return zeros, zeros
+    # Finite-sample conformal quantile.
+    level = min(1.0, np.ceil((n + 1) * (1 - alpha)) / n)
+    q = float(np.quantile(errors, level, method="higher"))
+
+    last_year = float(fit.history["year"].iloc[-1])
+    steps_ahead = np.maximum(fit.forecast["year"].to_numpy(dtype=float) - last_year, 0.0)
+    half = q * np.sqrt(1.0 + growth * steps_ahead / max(n, 1))
+    mean = fit.forecast["population"].to_numpy(dtype=float)
+    return np.maximum(mean - half, 0.0), mean + half
+
+
+def add_conformal(fit: Fit, alpha: float = 0.10) -> Fit:
+    """Attach conformal bands to a fit's forecast frame, in place of (or
+    alongside) any model-native interval."""
+    lower, upper = conformal_band(fit, alpha)
+    fit.forecast = fit.forecast.assign(conf_lower=lower, conf_upper=upper)
+    return fit
+
+
+# ---------------------------------------------------------------------
+# The ensemble: one number the registry will defend
+# ---------------------------------------------------------------------
+
+def ensemble_forecast(history: pd.DataFrame, horizon_year: int = 2050,
+                      holdout_years: int = 15, alpha: float = 0.10) -> dict:
+    """Combine the extrapolating families into a single weighted projection.
+
+    Each model that can extrapolate is fitted and calibrated, then weighted by
+    the inverse of its backtest mean absolute error — so a family that has been
+    wrong lately counts for less, and one that cannot leave its training range
+    at all is left out rather than allowed to vote. The band is the
+    conformal-calibrated spread: wide where the models have recently been
+    wrong, and honest about the fact that the ensemble cannot see past the
+    disagreement the comparison table shows.
+
+    The point is not that the ensemble is right. It is that this is the single
+    number the registry will defend, arrived at by arithmetic the reader can
+    check, with a band that means something. Everything else on the page is
+    there to show how much the answer still moves.
+    """
+    last_year = int(history["year"].max())
+    future_years = np.arange(last_year + 1, horizon_year + 1, dtype=float)
+
+    means, weights, fits = [], [], []
+    for spec in MODELS.values():
+        if not spec.extrapolates:
+            continue
+        defaults = {p.key: p.default for p in spec.params}
+        try:
+            fit = fit_and_forecast(history, spec, defaults, horizon_year, holdout_years)
+        except Exception:
+            continue
+        mae = fit.metrics["MAE"]
+        if not np.isfinite(mae):
+            continue
+        means.append(fit.forecast["population"].to_numpy(dtype=float))
+        weights.append(1.0 / max(mae, 1.0))
+        fits.append(fit)
+
+    if not means:
+        return {"years": future_years.astype(int), "mean": np.array([]),
+                "lower": np.array([]), "upper": np.array([]), "members": []}
+
+    W = np.array(weights)
+    W = W / W.sum()
+    M = np.vstack(means)                       # (n_models, n_years)
+    mean = (W[:, None] * M).sum(axis=0)
+
+    # Calibrated half-width: the weighted mean of the members' conformal
+    # half-widths, plus the between-model spread, so the band widens where the
+    # families genuinely disagree and not only where each is unsure of itself.
+    conf_half = np.zeros_like(mean)
+    for w, fit in zip(W, fits):
+        lo, hi = conformal_band(fit, alpha)
+        conf_half += w * (hi - lo) / 2.0
+    spread = M.std(axis=0)
+    half = conf_half + spread
+
+    members = [{"model": f.spec.label, "weight": float(w),
+                "mae": float(f.metrics["MAE"])}
+               for w, f in zip(W, fits)]
+    return {
+        "years": future_years.astype(int),
+        "mean": mean,
+        "lower": np.maximum(mean - half, 0.0),
+        "upper": mean + half,
+        "members": members,
+    }

@@ -198,8 +198,22 @@ def page_simulator() -> None:
         "everything invented is identical on both sides and cancels.",
     )
     city = compare.city_switch("sim_city", allow_both=False, default="Enschede")[0]
-    city_name = city.name
     st.caption(f"{city.name.upper()}, {city.country.upper()}  ·  {city.binding_constraint}")
+    _simulator_body(city)
+
+
+@st.fragment
+def _simulator_body(city) -> None:
+    """The interactive workbench, scoped so a lever move reruns only this.
+
+    The whole comparison — both control columns and every chart that depends
+    on them — lives in one fragment. Streamlit reruns a fragment in isolation
+    when a widget inside it changes, so dragging a lever no longer rebuilds
+    the sidebar, the header and the city switch around it; only the futures
+    re-run. The city switch stays outside, because switching city is a change
+    of context, not of scenario.
+    """
+    city_name = city.name
 
     caveat(
         "A workbench, not a forecast",

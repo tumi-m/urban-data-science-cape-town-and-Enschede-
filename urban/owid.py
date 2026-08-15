@@ -155,7 +155,7 @@ def projection(
     history: pd.DataFrame, forecast: pd.DataFrame, *,
     x: str = "year", y: str = "population",
     x_title: str = "", y_title: str = "", height: int = 340,
-    band: bool = True,
+    band: bool = True, band_cols: tuple[str, str] = ("lower", "upper"),
 ) -> alt.Chart:
     """History solid, forecast dashed, uncertainty as a band if there is one.
 
@@ -163,16 +163,21 @@ def projection(
     history invites the reader to treat the two as the same kind of statement,
     and they are not: one is a measurement and the other is an assumption with
     arithmetic attached.
+
+    `band_cols` names the interval columns to draw. A model-native band uses
+    the default ("lower", "upper"); a conformal band passes
+    ("conf_lower", "conf_upper") so the two can be told apart.
     """
     layers = []
 
-    if band and {"lower", "upper"} <= set(forecast.columns):
+    lo_col, hi_col = band_cols
+    if band and {lo_col, hi_col} <= set(forecast.columns):
         layers.append(
             alt.Chart(forecast).mark_area(opacity=0.14, color=SERIES[0]).encode(
                 x=alt.X(f"{x}:Q", title=x_title, axis=alt.Axis(format="d", grid=False)),
-                y=alt.Y("lower:Q", title=y_title,
+                y=alt.Y(f"{lo_col}:Q", title=y_title,
                         axis=alt.Axis(format=",.0f", grid=True, gridColor=GRID)),
-                y2="upper:Q",
+                y2=f"{hi_col}:Q",
             )
         )
 
@@ -204,6 +209,56 @@ def projection(
         x=f"{x}:Q", y=f"{y}:Q", text=alt.Text(f"{y}:Q", format=",.0f")))
 
     return style(alt.layer(*layers).properties(height=height))
+
+
+def ensemble_chart(history: pd.DataFrame, ensemble: dict, *,
+                   x: str = "year", y: str = "population",
+                   y_title: str = "inhabitants", height: int = 380) -> alt.Chart:
+    """The one projection the registry will defend, with its calibrated band.
+
+    History is solid ink. The ensemble mean is a dashed line, the conformal
+    band a shaded region that widens with distance and with disagreement
+    between the member families. Where a single-model chart shows one guess,
+    this shows the weighted answer the whole registry converges on — and how
+    much room is honestly left around it.
+    """
+    hist = history.rename(columns={y: "value"})
+    fc = pd.DataFrame({
+        x: ensemble["years"], "mean": ensemble["mean"],
+        "lower": ensemble["lower"], "upper": ensemble["upper"],
+    })
+
+    band = alt.Chart(fc).mark_area(opacity=0.13, color=SERIES[0]).encode(
+        x=alt.X(f"{x}:Q", title="", axis=alt.Axis(format="d", grid=False)),
+        y=alt.Y("lower:Q", title=y_title,
+                axis=alt.Axis(format=",.0f", grid=True, gridColor=GRID)),
+        y2="upper:Q",
+    )
+    hist_line = alt.Chart(hist).mark_line(
+        strokeWidth=2, color=SERIES[0], strokeCap="round").encode(
+        x=alt.X(f"{x}:Q", axis=alt.Axis(format="d", grid=False)),
+        y=alt.Y("value:Q", scale=alt.Scale(zero=False),
+                axis=alt.Axis(format=",.0f", grid=True, gridColor=GRID)),
+        tooltip=[alt.Tooltip(f"{x}:Q", format="d"), alt.Tooltip("value:Q", format=",.0f")],
+    )
+    bridge = pd.concat([
+        hist.tail(1)[[x]].assign(mean=hist["value"].iloc[-1]),
+        fc[[x, "mean"]],
+    ], ignore_index=True)
+    mean_line = alt.Chart(bridge).mark_line(
+        strokeWidth=2.4, color=SERIES[1], strokeDash=[6, 4], strokeCap="round").encode(
+        x=f"{x}:Q", y="mean:Q",
+        tooltip=[alt.Tooltip(f"{x}:Q", format="d"), alt.Tooltip("mean:Q", format=",.0f")])
+    end = fc.tail(1)
+    end_pt = alt.Chart(end).mark_point(
+        filled=True, size=90, color=SERIES[1], stroke=SURFACE, strokeWidth=2).encode(
+        x=f"{x}:Q", y="mean:Q")
+    end_tx = alt.Chart(end).mark_text(
+        align="right", dy=-14, fontSize=11, color=INK_2).encode(
+        x=f"{x}:Q", y="mean:Q", text=alt.Text("mean:Q", format=",.0f"))
+
+    return style(alt.layer(band, hist_line, mean_line, end_pt, end_tx)
+                 .properties(height=height))
 
 
 def raster(

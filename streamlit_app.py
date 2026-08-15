@@ -51,6 +51,7 @@ from urban.pages_behaviour import page_behaviour, page_scaling  # noqa: E402
 from urban.pages_simulator import page_simulator  # noqa: E402
 from urban.pages_open import page_opening  # noqa: E402
 from urban import chrome, geo  # noqa: E402
+from urban import gravity  # noqa: E402
 
 
 # =====================================================================
@@ -540,7 +541,7 @@ def page_constraints() -> None:
            "The same five limits, before and after cutting their cause by thirty per cent.",
            "Where the two lines separate, the limit can be reduced. In the last panel they "
            "sit on top of each other.")
-    st.altair_chart(chart_constraint_shapes(), use_container_width=True, key="shapes_constraints")
+    st.altair_chart(chart_constraint_shapes(), width="stretch", key="shapes_constraints")
     provenance("derived", "RIVM, Provincie Overijssel")
 
     st.divider()
@@ -601,7 +602,7 @@ def page_nitrogen() -> None:
            "Any bar shorter than the line is a habitat already over its limit. The orange "
            "bar is raised bog — over by a factor of four, and it sits on Enschede's own "
            "edge.")
-    st.altair_chart(chart_critical_values(), use_container_width=True, key="critical_values")
+    st.altair_chart(chart_critical_values(), width="stretch", key="critical_values")
     values_table(HABITATS.assign(**{
         "load ÷ critical value": (BACKGROUND_DEPOSITION / HABITATS["kdw"]).round(1)
     }))
@@ -626,7 +627,7 @@ def page_nitrogen() -> None:
            "blue is the traffic it causes afterwards.",
            "The blue is about twelve times the orange. Where you put the home, and how much "
            "parking you give it, matters far more than how cleanly you build it.")
-    st.altair_chart(chart_dwelling_nitrogen(), use_container_width=True, key="dwelling_nitrogen")
+    st.altair_chart(chart_dwelling_nitrogen(), width="stretch", key="dwelling_nitrogen")
     values_table(dwelling_nitrogen_table())
     note("Emission side only: no dispersion is modelled here and none should be read into it. "
          "Turning emissions into deposition at a named receptor is what the official calculator "
@@ -694,7 +695,7 @@ def page_mobility() -> None:
            "logarithmic — each gridline is a multiple, not an addition.",
            "The top of this list is about fifty times better than the bottom. Not a tuning "
            "difference — a different order of magnitude, available today.")
-    st.altair_chart(chart_energy_ladder(), use_container_width=True, key="energy_ladder")
+    st.altair_chart(chart_energy_ladder(), width="stretch", key="energy_ladder")
     values_table(
         MODES.sort_values("pkm_per_kwh", ascending=False)[
             ["label", "pkm_per_kwh", "kwh_per_pkm", "occupancy"]
@@ -726,7 +727,7 @@ def page_mobility() -> None:
            "logarithmic.",
            "The dots fall along a diagonal. Energy and space are not two problems to trade "
            "off against each other — they are one problem measured twice.")
-    st.altair_chart(chart_energy_versus_space(), use_container_width=True, key="energy_space")
+    st.altair_chart(chart_energy_versus_space(), width="stretch", key="energy_space")
     note("The modes fall along a diagonal. In a city with a settlement boundary on one side, a "
          "nature network on another and a national border on a third, the mode that wastes energy "
          "is the same mode that wastes the land there is none of. These are not two constraints to "
@@ -746,7 +747,7 @@ def page_mobility() -> None:
            "Height above sea level along a line across the city.",
            "About thirty metres of climb. Trivial in a car, and the reason a three-kilometre "
            "cycle trip to the station turns into a car trip instead.")
-    st.altair_chart(chart_ridge(), use_container_width=True, key="ridge")
+    st.altair_chart(chart_ridge(), width="stretch", key="ridge")
 
     stats([
         ("Total ascent, west to east", f"{ascent} m", "The climb a rider actually accumulates."),
@@ -842,7 +843,7 @@ def page_access() -> None:
     cov = coverage(reach)
 
     with c2:
-        st.altair_chart(chart_access_sheds(reach), use_container_width=False, key="access_sheds")
+        st.altair_chart(chart_access_sheds(reach), width="content", key="access_sheds")
 
     stats([
         ("Built-up land covered", f"{cov['land'] * 100:.0f}%",
@@ -880,7 +881,7 @@ def page_access() -> None:
             "Real reach, km": round(effective_radius(m), 2),
             "Shed as % of the circle": f"{100 / m['circuity'] ** 2:.0f}%",
         } for m in ACCESS_MODES]),
-        hide_index=True, use_container_width=True,
+        hide_index=True, width="stretch",
     )
 
     st.divider()
@@ -890,7 +891,7 @@ def page_access() -> None:
            "The orange line sits above the blue one. Counting land undercounts access, "
            "because the central station stands where most people are and the hectares at the "
            "edge are nearly empty.")
-    st.altair_chart(chart_coverage_curve(), use_container_width=True, key="coverage_curve")
+    st.altair_chart(chart_coverage_curve(), width="stretch", key="coverage_curve")
     values_table(coverage_table())
     note(f"The gap behaves in two ways worth separating. In proportional terms it is worst at the "
          f"short end: at a real walk the land metric reports {walk_cov['land'] * 100:.1f} per cent "
@@ -926,7 +927,7 @@ def page_access() -> None:
            "At walking distance the stations cover a fifth of the city. At cycling distance "
            "the same stations cover nearly three times it. This is a sum not a union, so the "
            "real figure is lower — but Cape Town is clearly not short of stations.")
-    st.altair_chart(chart_cape_town(), use_container_width=True, key="cape_town")
+    st.altair_chart(chart_cape_town(), width="stretch", key="cape_town")
     values_table(cape_town_table())
     note(f"The published figure is that {CT_BUFFER_KM2} km² of 800 m buffers cover "
          f"{CT_BUFFER_KM2 / CT_EDGE_KM2 * 100:.0f} per cent of the {CT_EDGE_KM2} km² development "
@@ -994,7 +995,7 @@ def page_border() -> None:
         permeability = next(v for lbl, v, _ in PERMEABILITY_SCENARIOS if lbl == chosen)
         st.caption(next(d for lbl, _, d in PERMEABILITY_SCENARIOS if lbl == chosen))
     with c2:
-        st.altair_chart(chart_catchment_geometry(radius, permeability), use_container_width=False, key="catchment_geom")
+        st.altair_chart(chart_catchment_geometry(radius, permeability), width="content", key="catchment_geom")
 
     beyond = segment_area(radius, BORDER_DISTANCE_KM)
     stats([
@@ -1037,8 +1038,10 @@ def page_border() -> None:
            "All three lines fall as you go right. The border costs Enschede almost nothing "
            "locally, and a great deal for anything needing a wide catchment — a hospital "
            "department, a concert hall.")
-    st.altair_chart(chart_catchment_curve(), use_container_width=True, key="catchment_curve")
+    st.altair_chart(chart_catchment_curve(), width="stretch", key="catchment_curve")
     provenance("derived", "CBS")
+
+    _gravity_section()
 
     st.divider()
     st.subheader("What this reframes")
@@ -1059,6 +1062,89 @@ def page_border() -> None:
         "That gives an unusual conclusion for a spatial analysis: Enschede's highest-return "
         "investment may not be spatial at all."
     )
+
+
+@st.fragment
+def _gravity_section() -> None:
+    """The same border question, answered with the real settlement pattern.
+
+    The disc model above assumes population is spread evenly. This one places
+    the dozen actual towns around Enschede at their real distances and lets a
+    gravity model discount each by distance — with the border multiplying the
+    effective distance of every German town. It is wrapped in a fragment so the
+    permeability slider reruns only this block, not the page around it.
+    """
+    st.divider()
+    st.subheader("The same border, town by town")
+    note(
+        "The disc above is honest but abstract: real people live in real towns at real "
+        "distances, and the border falls on some of them. This is a gravity model — each "
+        "town pulls in proportion to its population divided by the square of its distance, "
+        "and the frontier stretches the effective distance of every town on the German side. "
+        "Drag the permeability and watch the cross-border arcs thicken and thin."
+    )
+
+    perm = st.slider(
+        "Border permeability", 0.0, 1.0, 0.15, 0.05, key="gravity_perm",
+        help="0 = a closed frontier; 1 = a border that costs a commuter nothing but "
+             "distance. 0.15 is roughly today's observed cross-border share.")
+
+    open_a = gravity.accessibility(1.0)
+    now_a = gravity.accessibility(perm)
+    closed_a = gravity.accessibility(0.0)
+    working_a = gravity.accessibility(0.5)
+
+    stats([
+        ("Regional market, open border", f"{open_a:,.0f}",
+         "Gravity accessibility to the surrounding towns, border free (the reference)."),
+        ("Lost to a closed frontier", f"{(1 - closed_a / open_a) * 100:.0f}%",
+         "How much of the regional market sits across the border. Compare the disc's 37%."),
+        ("At today's openness", f"{now_a / open_a * 100:.0f}%",
+         f"Of the open-border market, at a permeability of {perm:.2f}."),
+        ("Returned by a working border", f"+{(working_a - now_a) / open_a * 100:.0f} pts",
+         "Going from the current setting to a permeability of 0.5. Policy, not construction."),
+    ])
+
+    figure("Which towns the border is holding back",
+           "One arc per town, weighted by the pull the model assigns to that link at the "
+           "permeability you set. Warm arcs cross the frontier.",
+           "Gronau's arc is the one to watch. It is close and mid-sized, so when the border "
+           "opens it becomes one of the strongest links on the map; when the border hardens it "
+           "all but vanishes. Münster is big enough to matter but far enough away that "
+           "distance has already done most of the discounting before the border adds any.")
+    flows = gravity.flow_frame(perm)
+    st.pydeck_chart(geo.gravity_flow_map(flows), width="stretch", height=520)
+    st.markdown(
+        geo.legend_html([
+            ("Enschede (origin)", "#0b0b0b"),
+            ("Dutch town", "#2a78d6"),
+            ("German town — crosses the border", "#eb6834"),
+        ]),
+        unsafe_allow_html=True)
+    st.caption(geo.OSM_ATTRIBUTION)
+
+    contrib = gravity.contribution_table(perm)
+    contrib = contrib[contrib["name"] != gravity.ORIGIN].copy()
+    contrib["lost to border"] = contrib["open"] - contrib["at_permeability"]
+    shown = contrib[["name", "side", "population", "distance_km",
+                     "open", "at_permeability", "lost to border"]].copy()
+    shown.columns = ["Town", "Side", "Population", "Distance, km",
+                     "Pull, open border", "Pull at this setting", "Withheld by the border"]
+    shown = shown.sort_values("Pull, open border", ascending=False)
+    values_table(
+        shown.assign(**{
+            "Population": shown["Population"].map("{:,.0f}".format),
+            "Distance, km": shown["Distance, km"].map("{:.1f}".format),
+            "Pull, open border": shown["Pull, open border"].map("{:.1f}".format),
+            "Pull at this setting": shown["Pull at this setting"].map("{:.1f}".format),
+            "Withheld by the border": shown["Withheld by the border"].map("{:.1f}".format),
+        }).reset_index(drop=True))
+    provenance(
+        "derived",
+        "Populations are published municipal figures (CBS for the Dutch towns, Destatis / "
+        "IT.NRW / LDS for the German ones); distances are straight-line between town centres. "
+        "The gravity form, the decay exponent of 2 and the town-as-a-point abstraction are "
+        "modelling choices, stated in urban/gravity.py.")
 
 
 def page_energy() -> None:
@@ -1095,7 +1181,7 @@ def page_energy() -> None:
            "For wind the two dots are far apart — a wind farm covers a lot of ground and the "
            "farming carries on underneath. For solar they sit on top of each other: a solar "
            "field takes all of it.")
-    st.altair_chart(chart_land_per_twh(), use_container_width=True, key="land_per_twh")
+    st.altair_chart(chart_land_per_twh(), width="stretch", key="land_per_twh")
     values_table(land_table())
     note("Rooftop solar sits at zero on both measures, which a logarithmic axis cannot draw, so it "
          "is stated here rather than nudged onto the scale — putting a zero at an arbitrary small "
@@ -1170,7 +1256,7 @@ def page_method() -> None:
             ("ProRail / NS", "Open network data", "Station locations and lines."),
             ("Third-party analysis", "Cape Town station-buffer coverage", "183 km² of buffers against an 895 km² edge, as published."),
         ], columns=["Holder", "Dataset or document", "What is taken from it"]),
-        hide_index=True, use_container_width=True,
+        hide_index=True, width="stretch",
     )
 
     st.divider()
@@ -1837,6 +1923,11 @@ def main() -> None:
         layout="wide",
         initial_sidebar_state="expanded",
     )
+    # Altair 6 ships chart data through narwhals/pyarrow internally, so the
+    # heavy raster frames already cross as columnar buffers; there is no
+    # separate "arrow" transformer to enable any more, and the vegafusion
+    # transformer would add a dependency this app does not otherwise need. All
+    # that is left to do is lift the row cap for the wide frames.
     alt.data_transformers.disable_max_rows()
     chrome.inject()
 

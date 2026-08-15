@@ -116,12 +116,12 @@ def op_perceive(agents: AgentState, env: EnvironmentState):
     dist = env.rings["km_to_centre"].to_numpy()
     vot = agents.frame["vot"].to_numpy()
     unique = np.unique(vot)
-    by_vot = {
-        v: np.array([bh._annual_commute_cost(d, float(v), env.policy) for d in dist])
-        for v in unique
-    }
+    # One vectorised logsumexp over the (unique vot × ring) grid rather than a
+    # scalar call per (vot, ring) pair — the same matrix helper the ring model
+    # uses, so the two engines cannot drift apart.
+    by_vot_matrix = bh._annual_commute_cost_matrix(dist, unique[:, None], env.policy)
     lookup = np.searchsorted(unique, vot)
-    agents.frame.attrs["commute_cost"] = np.stack([by_vot[v] for v in unique])[lookup]
+    agents.frame.attrs["commute_cost"] = by_vot_matrix[lookup]
     return agents, env
 
 

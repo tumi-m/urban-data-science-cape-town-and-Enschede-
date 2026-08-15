@@ -15,6 +15,7 @@ import altair as alt
 import numpy as np
 import pandas as pd
 import streamlit as st
+from types import SimpleNamespace
 
 from . import animate
 from . import cities
@@ -23,7 +24,8 @@ from . import demography as dem
 from . import geo
 from . import owid
 from . import spatial as sp
-from .forecast import MODELS, compare_all, fit_and_forecast
+from .forecast import (MODELS, add_conformal, compare_all, ensemble_forecast,
+                       fit_and_forecast)
 from .provenance import BADGE, SYNTHETIC, Series, worst_class
 from .theme import GRID, INK_2, INK_3, SERIES, style
 from .ui import (caveat, data_badge, figure, header, note, provenance, stats,
@@ -47,6 +49,45 @@ def _population(city_name: str = "Enschede"):
 @st.cache_data
 def _grid(city_name: str = "Enschede"):
     return sp.build_grid(geometry=cities.pick(city_name).geometry)
+
+
+# The forecasting calls below are cached on primitives (names, parameter
+# tuples, years) rather than on the frame and spec objects, because those are
+# awkward for the hasher and the primitives determine the result exactly.
+
+@st.cache_data(show_spinner="Fitting the model…")
+def _fit(city_name: str, model_key: str, params: tuple, horizon: int, holdout: int) -> dict:
+    """Fit one model and return only the serialisable results.
+
+    The fitted estimator itself is deliberately not returned: it does not
+    pickle, the page never calls it again after fitting, and `st.cache_data`
+    needs a serialisable value. Everything the page reads — the forecast with
+    its conformal band, the metrics, the backtest and residual frames — is a
+    DataFrame, a dict of floats, or a string, so it caches cleanly.
+    """
+    frame, _ = _population(city_name)
+    spec = MODELS[model_key]
+    fit = add_conformal(fit_and_forecast(frame, spec, dict(params), horizon, holdout))
+    return {
+        "forecast": fit.forecast,
+        "metrics": fit.metrics,
+        "backtest": fit.backtest,
+        "residuals": fit.residuals,
+        "capacity": fit.capacity,
+        "warnings": fit.warnings,
+    }
+
+
+@st.cache_data(show_spinner="Comparing all seven families…")
+def _compare(city_name: str, horizon: int, holdout: int):
+    frame, _ = _population(city_name)
+    return compare_all(frame, horizon, holdout)
+
+
+@st.cache_data(show_spinner="Combining the models into one number…")
+def _ensemble(city_name: str, horizon: int, holdout: int):
+    frame, _ = _population(city_name)
+    return ensemble_forecast(frame, horizon, holdout)
 
 
 def _city(key: str = "ml_city", allow_both: bool = False, default: str = "Enschede"):
@@ -297,7 +338,8 @@ def page_projection() -> None:
         holdout = st.slider("Backtest holdout, years", 5, 30, 15, 1, key="fc_holdout",
                             help="Years withheld from the end of the series and predicted.")
 
-    fit = fit_and_forecast(frame, spec, params, horizon, holdout)
+    fit = SimpleNamespace(**_fit(city.name, key, tuple(sorted(params.items())),
+                                 horizon, holdout))
 
     st.markdown(f"**{spec.label}** · {spec.family}")
     st.caption(spec.blurb)
@@ -326,14 +368,15 @@ def page_projection() -> None:
            "with arithmetic attached. Change the model in the sidebar and watch only the dashed "
            "part move.")
     st.altair_chart(
-        owid.projection(frame, fit.forecast, x_title="", y_title="inhabitants", height=340),
+        owid.projection(frame, fit.forecast, x_title="", y_title="inhabitants",
+                        height=340, band_cols=("conf_lower", "conf_upper")),
         width="stretch", key="fc_projection")
-    if spec.uncertainty and "lower" in fit.forecast:
-        note("The band is a 95% interval **given this kernel**. It is the model's uncertainty "
-             "about the future conditional on its own assumptions being right — not uncertainty "
-             "about whether those assumptions were the correct ones. No model in this registry "
-             "can report the second kind, which is precisely why the comparison table below "
-             "exists.")
+    note("The band is a **split-conformal 90% interval**, calibrated on how wrong this model "
+         "was about the withheld tail and widened with distance ahead. Unlike a kernel-native "
+         "band it makes no assumption about the model being correctly specified — a family "
+         "that has been wrong lately gets a wide band whatever it believes about itself. What "
+         "it still cannot carry is uncertainty about whether the functional form keeps holding "
+         "at all, which is why the comparison below matters more than any single band.")
     if fit.capacity:
         st.caption(f"Fitted saturation capacity: {fit.capacity:,.0f} inhabitants.")
     provenance(worst_class(series.klass, "derived"), "Model fitted here")
@@ -378,7 +421,7 @@ def page_projection() -> None:
         "will never tell you, and the reason a projection quoted without its alternatives is "
         "closer to rhetoric than to evidence."
     )
-    table = compare_all(frame, horizon, holdout)
+    table = _compare(city.name, horizon, holdout)
     st.dataframe(
         table.assign(**{
             str(horizon): table["2050"].map(lambda v: f"{v:,.0f}" if pd.notna(v) else "—"),
@@ -407,6 +450,51 @@ def page_projection() -> None:
             "thing they can say. Their excellent error scores are a measure of how well they "
             "memorised the recent past, not of how much they know about 2050."
         )
+
+    # ---- the ensemble: one number the registry will defend ------------
+    st.divider()
+    st.subheader("If you had to write down one number")
+    note(
+        "The table above is the honest answer to \"which model?\" — they disagree, and the "
+        "disagreement is the finding. But a planner still needs a planning figure, so here is "
+        "the one the registry will defend: the extrapolating families combined, each weighted "
+        "by how accurately it predicted the withheld years, with a conformal band that widens "
+        "where the models have recently been wrong and where they disagree with each other."
+    )
+    ens = _ensemble(city.name, horizon, holdout)
+    if ens["members"]:
+        final_mean = float(ens["mean"][-1])
+        band_w = float(ens["upper"][-1] - ens["lower"][-1])
+        stats([
+            (f"Ensemble {horizon}", f"{final_mean:,.0f}",
+             f"{(final_mean / now - 1) * 100:+.1f}% on {int(frame['year'].iloc[-1])}."),
+            ("Band width", f"±{band_w / 2:,.0f}",
+             "90% conformal interval at the horizon, including between-model disagreement."),
+            ("Members", f"{len(ens['members'])}",
+             "Extrapolating families, weighted by inverse backtest error."),
+        ])
+        figure(f"The combined projection to {horizon}",
+               "The dashed line is the error-weighted mean of every family that can extrapolate; "
+               "the band is the calibrated uncertainty around it.",
+               "This is the figure to quote, with its band. It moves less than any single model "
+               "does when you change one assumption, because no single assumption is doing all "
+               "the work — but it is still a model of a seventy-five-year series, not a census "
+               "of the future.")
+        st.altair_chart(owid.ensemble_chart(frame, ens, y_title="inhabitants", height=380),
+                        width="stretch", key="fc_ensemble")
+        with st.expander("How the weight was split"):
+            st.dataframe(
+                pd.DataFrame(ens["members"]).assign(
+                    weight=lambda d: (d["weight"] * 100).map("{:.1f}%".format),
+                    mae=lambda d: d["mae"].map("{:,.0f}".format),
+                ).rename(columns={"model": "Model", "weight": "Weight", "mae": "Backtest MAE"}),
+                hide_index=True, width="stretch")
+            st.caption(
+                "Weight is inverse backtest mean absolute error. A family that cannot "
+                "extrapolate at all — the tree ensembles — is excluded rather than allowed to "
+                "vote for a flat line.")
+        provenance(worst_class(series.klass, "derived"),
+                   "Combination of the models above, fitted and calibrated here")
 
     st.divider()
     st.subheader("What a real forecast would need")
