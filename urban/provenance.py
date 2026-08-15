@@ -34,6 +34,7 @@ RECONSTRUCTED = "reconstructed"
 SYNTHETIC = "synthetic"
 OFFICIAL = "official"
 DERIVED = "derived"
+ESTIMATE = "estimate"
 
 CLASS_NOTE = {
     OFFICIAL: "Published by a named authority.",

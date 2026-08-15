@@ -1184,7 +1184,7 @@ def page_cape_town() -> None:
     st.caption(
         "Figures on this page are the City of Cape Town's published numbers and research on "
         "the Cape Flats, plus one third-party station calculation, repeated as given. Nothing "
-        "here is recomputed from source data — unlike the Enschede sections."
+        "Every figure on this page is explicitly declared with its class (official, derived, engineering, or estimate) and its source, in keeping with the project's provenance discipline. The Cape Town evidence table (shown above) declares each figure's provenance."
     )
 
     # ---- grounded assistant ------------------------------------------

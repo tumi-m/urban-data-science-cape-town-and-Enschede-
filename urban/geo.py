@@ -7,11 +7,12 @@ background, so a station is where the station is and a 800 m circle is 800 m.
 
 Two things to know about the tiles.
 
-  * The basemap is fetched from OpenStreetMap's public tile servers at view
+  * The basemap is fetched from CARTO's public tile servers at view
     time. That needs outbound internet from wherever the app runs. Streamlit
     Cloud has it; the sandbox this was written in did not, so the tile rendering
     could not be verified locally — the layers, coordinates and radii could.
-  * OSM's tile usage policy requires attribution, and every map here carries it.
+  * CARTO and OSM attribution policy requires attribution, and every map here
+    carries it.
 
 Coordinates are given to four decimal places, which is about ten metres, and
 they are hand-placed rather than geocoded. That is well inside the tolerance of
@@ -32,7 +33,7 @@ from .theme import SERIES
 # streets and blocks are there as pale geometry, but the text is gone, so the
 # coloured layers and the hand-placed TextLayer labels are what read. No API
 # key and no account, like the OSM tiles it replaces.
-BASEMAP_TILES = "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
+BASEMAP_TILES = "https://basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png"
 BASEMAP_ATTRIBUTION = (
     "Basemap © CARTO · © OpenStreetMap contributors, ODbL."
 )
@@ -108,12 +109,13 @@ def _tile_layer() -> pdk.Layer:
 
     A raw tile layer rather than a hosted vector style, so the map needs no API
     key and no account — which matters for something meant to be forked and run
-    by someone else. Positron keeps the street and block geometry as pale lines
-    but drops the street-name and place-label text that made the raw OSM tiles
-    noisy, so the data layers and the hand-placed labels are what the eye lands
-    on. The tiles sit at near-full opacity because the style is already pale;
-    the previous 0.62 was needed to push the cluttered OSM tiles back, and is
-    no longer necessary.
+    by someone else. The `light_nolabels` variant keeps the street and block
+    geometry as pale lines but drops every street-name and place-label, so the
+    data layers and the hand-placed TextLayer labels are what the eye lands on.
+    (`light_all`, the default alternative, still bakes dark labels into the
+    tiles and is what read as stray black text on the maps.) The tiles sit at
+    near-full opacity because the style is already pale; the previous 0.62 was
+    needed to push the cluttered OSM tiles back, and is no longer necessary.
     """
     return pdk.Layer(
         "TileLayer",

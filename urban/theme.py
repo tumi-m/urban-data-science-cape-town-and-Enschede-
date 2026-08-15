@@ -25,6 +25,9 @@ GRID = "#eceae4"
 
 SERIES = ["#2a78d6", "#eb6834", "#1baf7a"]
 
+# The highlighted entity in a lens chart: always the first categorical slot.
+HIGHLIGHT = SERIES[0]
+
 # Sequential ramp for the maps: one hue, light to dark. Never a rainbow.
 SEQUENTIAL = ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"]
 
