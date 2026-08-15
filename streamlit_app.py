@@ -1260,6 +1260,37 @@ def page_method() -> None:
     )
 
     st.divider()
+    st.subheader("Modelling methods")
+    for title, body in [
+        ("Conformal forecast bands",
+         "Each family's 2050 interval is a split-conformal band: the half-width is the (1 − α) "
+         "quantile of that model's own absolute errors on the withheld tail, with the finite-sample "
+         "correction, widened with distance ahead by a square-root factor. It is calibrated to how "
+         "wrong the model was about the recent past, and needs no assumption that the functional "
+         "form is correctly specified — a family that has been wrong lately gets a wide band "
+         "whatever it believes about itself. What it cannot carry is uncertainty about whether the "
+         "form keeps holding at all, which is the larger error and the reason the comparison table "
+         "still matters more than any single band."),
+        ("The error-weighted ensemble",
+         "The single planning figure is the inverse-backtest-MAE-weighted mean of the families that "
+         "can extrapolate. Tree ensembles are excluded rather than allowed to vote for a flat line. "
+         "The band around it is the conformal half-width plus the between-model standard deviation, "
+         "so it widens where the families genuinely disagree and not only where each is unsure of "
+         "itself. It is the one number the registry will defend; it is not a claim that the answer "
+         "is right, only that it is arrived at by arithmetic the reader can check."),
+        ("The gravity model of the border",
+         "Each town's pull on Enschede is its population divided by the square of its distance, with "
+         "a floor so the origin city does not dominate by sitting at zero. The frontier multiplies "
+         "the effective distance of every German town by the inverse of the permeability. "
+         "Populations are published municipal figures (CBS, Destatis / IT.NRW / LDS) and distances "
+         "are straight-line between town centres; the gravity form, the exponent of 2 and the "
+         "town-as-a-point abstraction are modelling choices, stated in urban/gravity.py. It "
+         "reproduces the disc model's ~37% loss from the real settlement pattern and shows which "
+         "towns the border falls hardest on."),
+    ]:
+        st.markdown(f"**{title}** — {body}")
+
+    st.divider()
     st.subheader("Limits")
     for title, body in [
         ("No dispersion model",
@@ -1272,7 +1303,15 @@ def page_method() -> None:
         ("The border is a straight chord",
          "The real frontier is not straight, the population beyond it is not uniform, and "
          "permeability is not a scalar. All three simplifications understate the finding rather "
-         "than manufacture it."),
+         "than manufacture it. The gravity model relaxes the uniform-population assumption but "
+         "keeps the others: towns are points, distance is straight-line, and the decay exponent "
+         "is a stated choice rather than an estimated one."),
+        ("Conformal bands are calibrated, not prophetic",
+         "The forecast intervals are calibrated on the backtest tail and assume the recent past is "
+         "representative of the near future. They widen with distance ahead, but a regime shift the "
+         "holdout never saw — a repeat of the textile collapse, or a sharp migration change — would "
+         "fall outside any band, conformal or otherwise. The band's honesty is about the model's "
+         "recent error, not about the world's stability."),
         ("Access sheds are summed, and the city is a disc",
          "The access section stylises the built-up area as a disc of equal area and models density "
          "as an exponential gradient. The metropolitan comparison sums station sheds rather than "
