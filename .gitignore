@@ -13,3 +13,7 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+
+# Streamlit Cloud secrets — never commit an API key
+.streamlit/secrets.toml
+.env

@@ -25,6 +25,7 @@ from . import animate
 from . import chrome
 from . import cities
 from . import compare
+from . import llm
 from .theme import GRID, INK_2, INK_3, SERIES, SURFACE, style
 from .ui import figure, header, note, provenance, stats
 
@@ -215,6 +216,61 @@ def page_opening() -> None:
         "about the constraints, not about which city got more attention — everything from "
         "section 4 onward runs identically on both."
     )
+
+    # ---- the grounded assistant -------------------------------------
+    # The opening states the whole argument; a reader who wants to interrogate
+    # it in plain language can. The box is hidden entirely when no key is set,
+    # and the model answers only from the numbers computed above.
+    context = _opening_context(en, ct)
+    llm.assistant_box(context, key="open_llm", label="Ask this overview")
+
+
+def _opening_context(en, ct) -> str:
+    """The opening page's numbers and claims, as one text block for the LLM.
+
+    Only what the page already computed and stated — the LLM may restate this
+    but cannot add to it. Provenance classes are kept so a quoted figure carries
+    the same caveat it does on the page.
+    """
+    return f"""This is the opening overview of a report comparing Cape Town and
+Enschede, two cities that cannot build for opposite reasons.
+
+THE CLAIM: Cape Town's binding constraint is a polygon you can draw on a map
+(protected nature, the urban edge). Enschede's is a scalar field you cannot
+draw — nitrogen deposition — and it is the more absolute of the two. A
+polygon you can plan around; a field you can only bring down.
+
+POPULATION (indexed to 100 in 1950):
+- Cape Town: ends near 780 (almost 8x its 1950 size). Current population
+  {ct['Population']:,.0f}; {ct['Growth since 1950']:+.0%} since 1950.
+- Enschede: ends near 155, after a thirty-year plateau. Current population
+  {en['Population']:,.0f}; {en['Growth since 1950']:+.0%} since 1950.
+
+LAND LEDGER (km²):
+- Cape Town: municipal area {ct['Municipal area, km²']:,.0f}; already built on
+  {ct['Built-up, km²']:,.0f}; physically left {ct['Land physically left, km²']:,.0f};
+  permitted to build on {ct['Land permitted, km²']:,.0f} (same as physical —
+  the limit is the polygon, not a separate rule). [derived, City of Cape Town]
+- Enschede: municipal area {en['Municipal area, km²']:,.0f}; already built on
+  {en['Built-up, km²']:,.0f}; physically left {en['Land physically left, km²']:,.0f};
+  permitted to build on {en['Land permitted, km²']:,.0f} (ZERO — the nitrogen
+  ruling makes the test categorical). [derived]
+
+RUNWAY (years of growth left at the last decade's rate, at current density):
+- Cape Town: {ct['Years of growth left']:.0f} years (shorter in reality — much
+  of the permitted land is steep, sandy, or over the aquifer).
+- Enschede: 0 years, for as long as the nitrogen ruling stands. Density does
+  not help because the test is categorical, not quantitative.
+
+DENSITY (people per built km²): Cape Town {ct['Density per built km²']:,.0f},
+Enschede {en['Density per built km²']:,.0f}.
+
+THE TAXONOMY: polygon constraints (zoning, edges, buffers) are legible and
+plannable; field constraints (air quality, noise, nitrogen, carbon) arrive
+everywhere and break the polygon-based planning machinery because a categorical
+test on a continuous quantity cannot be zoned around. Enschede is an early
+example of a problem every city is starting to face.
+"""
 
 
 # ---------------------------------------------------------------------
