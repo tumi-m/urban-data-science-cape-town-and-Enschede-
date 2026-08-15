@@ -22,6 +22,7 @@ from . import cities
 from . import compare
 from . import demography as dem
 from . import geo
+from . import llm
 from . import owid
 from . import spatial as sp
 from .forecast import (MODELS, add_conformal, compare_all, ensemble_forecast,
@@ -501,12 +502,46 @@ def page_projection() -> None:
     note(
         "A cohort-component model, which is what a statistics office actually runs: age the "
         "population forward one year at a time under fertility, mortality and migration "
-        "schedules by age and sex, rather than fitting a curve to a total. It is less "
+        "schedules by age and sex, rather than fitting a curve to the total. It is less "
         "impressive-looking and far more reliable, because it carries the mechanism — a city "
         "whose 20-to-25 cohort is three times its 60-to-65 cohort has a future that no curve "
         "fitted to the total can see. The components chart in the previous section is the first "
         "input such a model would need."
     )
+
+    # ---- grounded assistant ------------------------------------------
+    ens = _ensemble(city.name, horizon, holdout)
+    ens_2050 = float(ens["mean"][-1]) if ens["members"] else float("nan")
+    ens_band = float(ens["upper"][-1] - ens["lower"][-1]) if ens["members"] else float("nan")
+    members = ", ".join(f"{m['model']} (weight {m['weight']*100:.0f}%, backtest MAE {m['mae']:,.0f})"
+                        for m in ens["members"]) if ens["members"] else "none"
+    context = (
+        f"SECTION: Forecasting {city.name}'s population in {horizon}.\n"
+        f"Data: {len(frame)} years ({int(frame['year'].min())}–{int(frame['year'].max())}), "
+        f"current population {now:,.0f}. Provenance: {series.klass}.\n\n"
+        f"SELECTED MODEL: {spec.label} ({spec.family}). "
+        f"Projected {horizon}: {final:,.0f} ({(final / now - 1) * 100:+.1f}% on "
+        f"{int(frame['year'].iloc[-1])}). Backtest MAE {fit.metrics['MAE']:,.0f} over "
+        f"{fit.metrics['Holdout years']} withheld years; MAPE {fit.metrics['MAPE %']:.2f}%. "
+        f"Extrapolates: {'yes' if spec.extrapolates else 'no'}.\n"
+        f"The band is a split-conformal 90% interval calibrated on the model's own backtest "
+        f"errors, widened with distance ahead. It is calibrated to recent error, NOT prophetic "
+        f"about regime shifts.\n"
+        f"Warnings: {'; '.join(fit.warnings) if fit.warnings else 'none'}\n\n"
+        f"ALL SEVEN MODELS COMPARED: the families disagree by "
+        f"{valid['2050'].max() - valid['2050'].min():,.0f} people at {horizon} "
+        f"(~{(valid['2050'].max() - valid['2050'].min()) / now * 100:.0f}% of current "
+        f"population). The two with the best backtest scores (tree ensembles) cannot "
+        f"extrapolate at all — they predict a flat line.\n\n"
+        f"ENSEMBLE (the one number the registry defends): {ens_2050:,.0f} by {horizon}, "
+        f"with a ±{ens_band/2:,.0f} conformal band. Members: {members}. Tree ensembles are "
+        f"excluded rather than allowed to vote for a flat line.\n\n"
+        f"FINDING: on a series this short and smooth, the choice of model matters more than "
+        f"the data. A single forecast with a tidy interval hides the disagreement; the "
+        f"comparison table is the honest answer to 'which model?'."
+    )
+    llm.assistant_box(context, key="projection_llm",
+                      label="Ask the forecast section")
 
 
 # =====================================================================
@@ -1083,6 +1118,41 @@ def page_cape_town() -> None:
         "the Cape Flats, plus one third-party station calculation, repeated as given. Nothing "
         "here is recomputed from source data — unlike the Enschede sections."
     )
+
+    # ---- grounded assistant ------------------------------------------
+    context = (
+        f"SECTION: Cape Town — running out of room.\n"
+        f"Cape Town has the opposite problem to Enschede: it has almost no land left.\n\n"
+        f"LAND (official/derived, City of Cape Town):\n"
+        f"- Municipal area: {ct.MUNICIPAL_KM2:,} km².\n"
+        f"- Inside the urban edge (may build on): {ct.URBAN_EDGE_KM2} km² — "
+        f"{ct.URBAN_EDGE_KM2 / ct.MUNICIPAL_KM2 * 100:.0f}% of the city.\n"
+        f"- Formally protected nature: {ct.PROTECTED_HA:,} ha ({ct.PROTECTED_SHARE}%).\n"
+        f"- Original vegetation lost: {ct.VEGETATION_LOST_PCT}% (mostly on the flat lowlands "
+        f"where building is easiest).\n"
+        f"- People per km² of buildable land: {ct.PEOPLE_PER_BUILDABLE_KM2:,.0f} (about 5x "
+        f"Enschede's figure, on much harder ground).\n\n"
+        f"THE FOUR LIMITS:\n"
+        f"- The urban edge: a polygon; stops outward growth.\n"
+        f"- Protected nature: a polygon; takes a third of the land.\n"
+        f"- The Cape Flats sand: liquefiable between ~{ct.LIQUEFIABLE_FROM_M} and "
+        f"{ct.LIQUEFIABLE_TO_M:.0f} m, so building tall there costs far more.\n"
+        f"- The aquifer: {ct.AQUIFER_YIELD_MM3} million m³/yr, about {aquifer_days} days of "
+        f"supply — a buffer, not a replacement for the dams, and the sand that makes the water "
+        f"reachable lets anything spilled reach it.\n"
+        f"Two limits are lines on a map; two are measurements. You can only argue about a line; "
+        f"a measurement can be brought down.\n\n"
+        f"THE TRAP: the urban edge + protected nature push housing onto the Cape Flats — the "
+        f"one place where building up is most expensive (sand) and building at all threatens "
+        f"the water (aquifer). Every part is reasonable alone; together they trap the city.\n\n"
+        f"TRAINS: ~{ct.STATION_SHARE * 100:.0f}% of land inside the urban edge is within 800 m "
+        f"of a station ({ct.STATION_BUFFERS_KM2} km² of {ct.URBAN_EDGE_KM2} km²). But the "
+        f"network was stripped by theft, so coverage is beside the point — a station you can "
+        f"walk to is worth nothing if no train comes.\n\n"
+        f"Provenance: City of Cape Town published figures + Cape Flats research + one "
+        f"third-party station calculation, repeated as given (not recomputed from source)."
+    )
+    llm.assistant_box(context, key="capetown_llm", label="Ask the Cape Town section")
 
 
 def page_compare() -> None:

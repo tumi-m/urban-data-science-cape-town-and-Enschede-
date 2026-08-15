@@ -52,6 +52,7 @@ from urban.pages_simulator import page_simulator  # noqa: E402
 from urban.pages_open import page_opening  # noqa: E402
 from urban import chrome, geo  # noqa: E402
 from urban import gravity  # noqa: E402
+from urban import llm  # noqa: E402
 
 
 # =====================================================================
@@ -1062,6 +1063,48 @@ def page_border() -> None:
         "That gives an unusual conclusion for a spatial analysis: Enschede's highest-return "
         "investment may not be spatial at all."
     )
+
+    g_open = gravity.accessibility(1.0)
+    g_now = gravity.accessibility(0.15)
+    g_closed = gravity.accessibility(0.0)
+    g_working = gravity.accessibility(0.5)
+    context = (
+        f"SECTION: The German border cuts Enschede's market.\n"
+        f"The border is {BORDER_DISTANCE_KM} km from the city centre.\n\n"
+        f"DISC MODEL (uniform density, {DENSITY_DUTCH}/km² Dutch side, {DENSITY_GERMAN}/km² "
+        f"German side, permeability scales the far area):\n"
+        f"- At the current radius of {radius} km, {beyond:.0f} km² of the "
+        f"{disc_area(radius):.0f} km² disc lies beyond the border.\n"
+        f"- Geometric loss at {radius} km: {(1 - catchment_ratio(radius, 0)) * 100:.0f}%.\n"
+        f"- Effective catchment at permeability {permeability:.2f}: "
+        f"{catchment_ratio(radius, permeability) * 100:.0f}% of a full disc.\n"
+        f"- Accessible population at that permeability: "
+        f"{accessible_population(radius, permeability) / 1000:.0f}k.\n"
+        f"- Loss grows with radius: at 30 km it costs "
+        f"{(1 - catchment_ratio(30, 0)) * 100:.0f}%.\n"
+        f"Finding: the border takes away the regional tier (hospital, concert hall, "
+        f"university intake) while the local tier looks healthy. Permeability is an "
+        f"institutional quantity (qualification recognition, ticketing, insurance "
+        f"portability), not a distance. [derived, CBS/Kadaster]\n\n"
+        f"GRAVITY MODEL (real towns, pull = population / distance², border divides the "
+        f"effective distance of German towns by permeability):\n"
+        f"- Regional market, open border: {g_open:,.0f} units.\n"
+        f"- Lost to a closed frontier: {(1 - g_closed / g_open) * 100:.0f}% (compare the "
+        f"disc's ~37% at 20 km).\n"
+        f"- At today's openness (0.15): {g_now / g_open * 100:.0f}% of the open market.\n"
+        f"- Returned by a working border (permeability 0.5): "
+        f"+{(g_working - g_now) / g_open * 100:.0f} percentage points.\n"
+        f"- Hardest hit: Gronau (50,000 people, 8.8 km away — close and mid-sized, so its "
+        f"arc collapses as the border hardens). Münster is big but far enough that distance "
+        f"has already discounted most of its pull.\n"
+        f"[derived: CBS / Destatis / IT.NRW / LDS populations; straight-line distances; "
+        f"gravity form and exponent of 2 are stated modelling choices]\n\n"
+        f"REFRAME: the border is a demand-side constraint upstream of the supply-side ones "
+        f"(nitrogen, noise). A thinner catchment weakens the case for dense development, "
+        f"pushing building to the edge, which raises traffic, which raises nitrogen. "
+        f"Enschede's highest-return investment may not be spatial at all."
+    )
+    llm.assistant_box(context, key="border_llm", label="Ask the border section")
 
 
 @st.fragment
