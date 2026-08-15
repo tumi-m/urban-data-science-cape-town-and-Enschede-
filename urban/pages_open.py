@@ -16,13 +16,16 @@ the reader's memory.
 
 from __future__ import annotations
 
+import altair as alt
+import numpy as np
 import pandas as pd
 import streamlit as st
 
+from . import animate
 from . import chrome
 from . import cities
 from . import compare
-from .theme import SERIES
+from .theme import GRID, INK_2, INK_3, SERIES, SURFACE, style
 from .ui import figure, header, note, provenance, stats
 
 
@@ -43,6 +46,14 @@ def page_opening() -> None:
         "way past — and it is the more absolute of the two.</div>",
         unsafe_allow_html=True)
 
+    # ---- the divergence, before any numbers -------------------------
+    # A thesis stated in words and then proved in tables asks the reader to
+    # hold the claim in memory while scrolling for the evidence. This is the
+    # claim made visible first: two population curves that share a starting
+    # point and almost nothing else, animated so the separation is something
+    # the reader watches happen rather than has to imagine.
+    _opening_divergence()
+
     # ---- the four numbers, before anything else ----------------------
     # An opening that states a thesis and then makes the reader scroll for the
     # evidence is asking for trust it has not earned yet. These four are the
@@ -62,6 +73,12 @@ def page_opening() -> None:
          "For as long as the nitrogen ruling stands. Density does not help: the test is "
          "categorical."),
     ])
+
+    # The four numbers above are the argument, but a row of stat tiles does
+    # not show *how far apart* the two cities are. This is the same ledger as
+    # a paired bar chart on a log scale, so the eye takes in three orders of
+    # magnitude at once and sees the one bar that drops to zero.
+    _opening_land(df)
 
     st.write("")
     st.divider()
@@ -198,3 +215,111 @@ def page_opening() -> None:
         "about the constraints, not about which city got more attention — everything from "
         "section 4 onward runs identically on both."
     )
+
+
+# ---------------------------------------------------------------------
+# The two opening visuals
+# ---------------------------------------------------------------------
+#
+# Both are built from series the later sections compute, so the landing page
+# is a preview of the report rather than a separate statement of it. Nothing
+# here introduces a new number; it shows the ones the page already states.
+
+def _opening_divergence() -> None:
+    """The animated population comparison, indexed to 1950 = 100.
+
+    Both cities start at 100 because the point is growth *rates*, not sizes —
+    Cape Town has added more people since 1950 than Enschede has ever had, so
+    an absolute axis would pin Enschede to the floor. Indexed, the two curves
+    separate by a factor of five, and the animation lets a reader watch that
+    happen rather than arrive to find it already drawn.
+    """
+    rows = []
+    for c in cities.CITIES.values():
+        f, _ = c.population()
+        base = float(f["population"].iloc[0])
+        rows.append(pd.DataFrame({
+            "year": f["year"], "entity": c.name, "index": f["population"] / base * 100,
+        }))
+    both = pd.concat(rows, ignore_index=True)
+    shared = sorted(set(both[both["entity"] == "Enschede"]["year"])
+                    & set(both[both["entity"] == "Cape Town"]["year"]))
+    palette = {c.name: c.accent for c in cities.CITIES.values()}
+
+    figure(
+        "Two cities, one starting point, seventy-four years",
+        "Both indexed to 100 in 1950. Press play to watch them separate.",
+        reads_as="Cape Town ends near 780 — almost eight times its 1950 size. Enschede ends "
+                 "near 155, after a thirty-year plateau in the middle. The models in section "
+                 "four have to fit both shapes, and that is where they start to disagree.")
+    animate.player(
+        "open_divergence", shared,
+        lambda i: st.altair_chart(
+            animate.lines_upto(
+                both, "year", "index", "entity", shared[i],
+                x_title="", y_title="index, 1950 = 100", colours=palette,
+                x_domain=(shared[0], shared[-1]),
+                y_domain=(90, both["index"].max() * 1.06), height=360),
+            width="stretch", key="open_divergence_chart"))
+    provenance("derived", "Both population series, rebased to 1950.")
+
+
+def _opening_land(df: pd.DataFrame) -> None:
+    """The land ledger as one paired bar chart, on a log scale.
+
+    Four measures, two cities, one axis: municipal area, what is already built
+    on, what is physically left, and what the law permits. Logarithmic because
+    the two cities span three orders of magnitude, and because the whole point
+    — Enschede's permitted bar collapsing to zero — cannot be drawn on a linear
+    scale that also shows Cape Town's 2,451 km². The zero is stated in the
+    caption rather than nudged onto the axis, which is the rule this codebase
+    keeps for exactly this case.
+    """
+    rows = []
+    for city, row in [("Enschede", df.iloc[0]), ("Cape Town", df.iloc[1])]:
+        rows.append({"measure": "Municipal area", "city": city,
+                     "km²": float(row["Municipal area, km²"])})
+        rows.append({"measure": "Already built on", "city": city,
+                     "km²": float(row["Built-up, km²"])})
+        rows.append({"measure": "Land physically left", "city": city,
+                     "km²": float(row["Land physically left, km²"])})
+        rows.append({"measure": "Land it may build on", "city": city,
+                     "km²": float(row["Land permitted, km²"])})
+    land = pd.DataFrame(rows)
+    order = ["Municipal area", "Already built on", "Land physically left",
+             "Land it may build on"]
+    land["measure"] = pd.Categorical(land["measure"], order, ordered=True)
+    palette = {c.name: c.accent for c in cities.CITIES.values()}
+
+    bars = (
+        alt.Chart(land)
+        .mark_bar(stroke=SURFACE, strokeWidth=1)
+        .encode(
+            x=alt.X("km²:Q", scale=alt.Scale(type="log", domain=[1, 3000]),
+                    axis=alt.Axis(format="~s", grid=True, gridColor=GRID),
+                    title="km² (log scale)"),
+            y=alt.Y("measure:N", sort=order, title=None,
+                    axis=alt.Axis(labelLimit=220, labelFontSize=11)),
+            color=alt.Color("city:N", scale=alt.Scale(
+                domain=list(palette), range=list(palette.values())),
+                legend=alt.Legend(orient="top", title=None)),
+            tooltip=["city", "measure", alt.Tooltip("km²:Q", format=",.0f")],
+        )
+    )
+    # Label the non-zero bars with their value; the zero bar is labelled in
+    # the caption, never nudged onto a log axis it cannot live on.
+    labelled = land[land["km²"] > 0]
+    text = (
+        alt.Chart(labelled)
+        .mark_text(align="left", dx=6, fontSize=10, color=INK_2)
+        .encode(x="km²:Q", y=alt.Y("measure:N", sort=order),
+                text=alt.Text("km²:Q", format=",.0f"))
+    )
+    st.altair_chart(style(alt.layer(bars, text).properties(height=260)),
+                    width="stretch", key="open_land")
+    st.caption(
+        "Enschede's “Land it may build on” bar is zero and so cannot appear on a log axis — "
+        "that is the finding, stated here rather than drawn as a sliver that would understate "
+        "it. Cape Town's permitted land is the same as its physical remainder; Enschede's is "
+        "not, which is the whole argument.")
+    provenance("derived", "The land ledgers computed in section 2.")
