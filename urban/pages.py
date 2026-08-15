@@ -1014,12 +1014,50 @@ def page_cape_town() -> None:
         f"The sand that makes the water reachable is the same sand that lets anything spilled "
         f"on the surface reach it."
     )
-    _, aquifer_days = ct.water_budget()
+    budget, aquifer_days = ct.water_budget()
     st.info(
         "**So the limit pushes housing onto the one piece of land where building up is most "
         "expensive and where building at all threatens the water.** Every part of that is a "
         "reasonable decision on its own. Together they trap the city."
     )
+    stats([
+        ("Aquifer yield", f"{ct.AQUIFER_YIELD_MM3} million m³/yr",
+         "What the Cape Flats aquifer can deliver in a year."),
+        ("City demand", f"{budget.set_index('measure').loc['City demand','m3_per_year']/1e6:.0f} million m³/yr",
+         f"At ~180 litres per person per day, post-drought consumption."),
+        ("Days the aquifer alone could last", f"{aquifer_days} days",
+         "The yield divided by daily demand. A buffer, not a replacement for the dams."),
+    ])
+    figure("The aquifer against what the city drinks",
+           "Annual yield of the Cape Flats aquifer against the city's annual demand, in the "
+           "same units.",
+           "The two bars are not close. The aquifer is a reserve that bought the city time in "
+           "the drought, not a second supply — and it is the reserve that the cheapest "
+           "buildable land sits directly on top of.")
+    water_df = budget.assign(
+        m3=budget["m3_per_year"],
+        label=budget["measure"],
+    )
+    bars = (
+        alt.Chart(water_df)
+        .mark_bar(height=30, cornerRadiusEnd=2)
+        .encode(
+            y=alt.Y("label:N", sort=["Aquifer yield", "City demand"], title=None,
+                    axis=alt.Axis(labelLimit=220, labelFontSize=11)),
+            x=alt.X("m3:Q", title="cubic metres per year",
+                    axis=alt.Axis(format="~s", grid=True, gridColor=GRID)),
+            color=alt.Color(
+                "label:N",
+                scale=alt.Scale(domain=["Aquifer yield", "City demand"],
+                                range=[SERIES[2], SERIES[1]]),
+                legend=None),
+            tooltip=["label", alt.Tooltip("m3:Q", format=",.0f")],
+        )
+    )
+    labels = bars.mark_text(align="left", dx=6, fontSize=11, color=INK_2).encode(
+        text=alt.Text("m3:Q", format=",.0f"))
+    st.altair_chart(style(alt.layer(bars, labels).properties(height=180)),
+                    width="stretch", key="ct_water")
     note(
         f"It is worth knowing how much water that actually is. The aquifer's "
         f"{ct.AQUIFER_YIELD_MM3} million cubic metres a year sounds enormous. Divided by what "
@@ -1027,6 +1065,7 @@ def page_cape_town() -> None:
         f"replacement for the dams — it is a buffer, and a buffer is exactly the kind of thing "
         f"you cannot afford to contaminate."
     )
+    provenance("derived", "City of Cape Town aquifer yield; demand from population × post-drought use")
 
     st.divider()
     st.subheader("Trains")
