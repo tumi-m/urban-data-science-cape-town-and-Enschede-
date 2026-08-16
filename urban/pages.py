@@ -182,8 +182,11 @@ def page_population() -> None:
            "people since 1950 than Enschede has ever had, so on an absolute axis Enschede "
            "would be a flat line along the bottom. Cape Town ends near 780; Enschede near 155.")
     both = _indexed_both()
-    shared = sorted(set(both[both["entity"] == "Enschede"]["year"])
-                    & set(both[both["entity"] == "Cape Town"]["year"]))
+    # Years every city has in common, so the animation never shows a year
+    # where one entity's line silently ends. Intersecting all the entities'
+    # year sets keeps this true no matter how many cities are registered.
+    year_sets = [set(both.loc[both["entity"] == c.name, "year"]) for c in cities.CITIES.values()]
+    shared = sorted(set.intersection(*year_sets))
     palette = {c.name: c.accent for c in cities.CITIES.values()}
     animate.player(
         "pop_indexed_both", shared,
@@ -1265,7 +1268,11 @@ def page_compare() -> None:
     )
 
     df = compare.scorecard_frame()
-    en, ctn = df.iloc[0], df.iloc[1]
+    # The contrast pair the report is built on, by name rather than position —
+    # the registry now holds four cities and this page's argument is about
+    # these two. The scorecard below shows all of them.
+    en = df[df["City"] == "Enschede"].iloc[0]
+    ctn = df[df["City"] == "Cape Town"].iloc[0]
 
     stats([
         ("Cape Town is this many times larger",

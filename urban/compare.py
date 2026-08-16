@@ -129,11 +129,12 @@ def ledger_pair() -> None:
     The two cities are deliberately *not* put on a shared axis here. Cape Town
     is seventeen times the area, so a shared axis would compress Enschede into a
     sliver and the reader would learn only that one city is bigger, which is not
-    the finding. The finding is that the two ledgers have the same structure and
+    the finding. The finding is that the ledgers have the same structure and
     stop for different reasons, and that survives separate axes.
     """
-    cols = st.columns(2, gap="large")
-    for col, city in zip(cols, cities.CITIES.values()):
+    all_cities = list(cities.CITIES.values())
+    cols = st.columns(len(all_cities), gap="large")
+    for col, city in zip(cols, all_cities):
         with col:
             st.markdown(
                 f"<div class='ledger-head' style='--accent:{city.accent}'>"
@@ -197,7 +198,7 @@ def scorecard_frame() -> pd.DataFrame:
 def scorecard() -> None:
     """The comparison table, as a designed block rather than a dataframe dump."""
     df = scorecard_frame()
-    a, b = df.iloc[0], df.iloc[1]
+    accents = [cities.pick(name).accent for name in df["City"]]
 
     measures = [
         ("Population today", "{:,.0f}", "Population"),
@@ -210,23 +211,22 @@ def scorecard() -> None:
         ("Land it may build on", "{:,.0f} km²", "Land permitted, km²"),
         ("People per built km²", "{:,.0f}", "Density per built km²"),
     ]
-    html = ["<table class='scorecard'><thead><tr><th></th>",
-            f"<th style='--accent:{cities.ENSCHEDE.accent}'>{a['City']}</th>",
-            f"<th style='--accent:{cities.CAPE_TOWN.accent}'>{b['City']}</th>",
-            "</tr></thead><tbody>"]
+    html = ["<table class='scorecard'><thead><tr><th></th>"]
+    for row, accent in zip(df.itertuples(), accents):
+        html.append(f"<th style='--accent:{accent}'>{row.City}</th>")
+    html.append("</tr></thead><tbody>")
     for label, fmt, col in measures:
-        html.append(f"<tr><td class='m'>{label}</td>"
-                    f"<td>{fmt.format(a[col])}</td><td>{fmt.format(b[col])}</td></tr>")
+        cells = "".join(f"<td>{fmt.format(v)}</td>" for v in df[col])
+        html.append(f"<tr><td class='m'>{label}</td>{cells}</tr>")
 
     def years(v):
         return "—" if not np.isfinite(v) else f"{v:,.0f} years"
 
+    cells = "".join(f"<td>{years(v)}</td>" for v in df["Years of growth left"])
     html.append(f"<tr class='hi'><td class='m'>Growth the remaining land allows</td>"
-                f"<td>{years(a['Years of growth left'])}</td>"
-                f"<td>{years(b['Years of growth left'])}</td></tr>")
-    html.append(f"<tr><td class='m'>What stops building</td>"
-                f"<td class='w'>{a['What stops building']}</td>"
-                f"<td class='w'>{b['What stops building']}</td></tr>")
+                f"{cells}</tr>")
+    cells = "".join(f"<td class='w'>{v}</td>" for v in df["What stops building"])
+    html.append(f"<tr><td class='m'>What stops building</td>{cells}</tr>")
     html.append("</tbody></table>")
     st.markdown("".join(html), unsafe_allow_html=True)
 

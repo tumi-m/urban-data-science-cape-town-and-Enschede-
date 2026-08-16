@@ -115,6 +115,76 @@ KNOWN_SITES_CAPE_TOWN = pd.DataFrame([
              "development pressure — the contested land in the water section."},
 ])
 
+# The same, for Johannesburg. Coordinates are kilometres from Park Station,
+# east and north. Johannesburg is the control case: no coast, no mountain, no
+# urban edge — the constraint is not on this map because it is not on the
+# ground either. Approximate to within a kilometre, same as the others.
+KNOWN_SITES_JOHANNESBURG = pd.DataFrame([
+    {"name": "CBD and Park Station", "kind": "Employment", "x": 0.0, "y": 0.0,
+     "label_dx": 0.0, "label_dy": -2.2, "label_align": "left",
+     "note": "The original mining camp. Emptied in the 1990s, partially refilled since — "
+             "the inner city as a property cycle, not a ruin."},
+    {"name": "Hillbrow", "kind": "Housing", "x": 0.8, "y": 1.8,
+     "label_dx": 0.0, "label_dy": 2.2, "label_align": "left",
+     "note": "High-rise densification by neglect: the towers built for white professionals, "
+             "filled later by everyone the law had kept out."},
+    {"name": "Sandton", "kind": "Employment", "x": 9.0, "y": 8.0,
+     "label_dx": 0.0, "label_dy": 2.2, "label_align": "right",
+     "note": "The decentralised counter-CBD: office towers and the stock exchange on "
+             "farmland the northward flight made valuable."},
+    {"name": "Midrand", "kind": "Employment", "x": 16.0, "y": 15.0,
+     "label_dx": 0.0, "label_dy": 2.2, "label_align": "right",
+     "note": "Halfway to Pretoria, and no longer halfway to anywhere: the corridor that "
+             "made Johannesburg and Tshwane one continuous build."},
+    {"name": "Alexandra", "kind": "Housing", "x": 7.5, "y": -4.0,
+     "label_dx": 0.0, "label_dy": -2.2, "label_align": "left",
+     "note": "One square kilometre of township beside four of office towers — the "
+             "clearest rent gradient in the country, at walking distance."},
+    {"name": "Soweto", "kind": "Housing", "x": -8.0, "y": -13.0,
+     "label_dx": 0.0, "label_dy": -2.2, "label_align": "right",
+     "note": "Twenty kilometres from the jobs, by design. The apartheid city's single "
+             "largest artefact, now a city in its own right."},
+    {"name": "Melville Koppies", "kind": "Nature", "x": -4.0, "y": -2.0,
+     "label_dx": 0.0, "label_dy": -2.2, "label_align": "left",
+     "note": "The rocky ridge reserve — the only thing on this map that stops building, "
+             "and it is one kilometre across."},
+])
+
+# The same, for Amsterdam. Coordinates are kilometres from the Dam, east and
+# north. The city is a ring of twentieth-century plans around a
+# seventeenth-century core, and the whole municipality fits inside a square
+# the size of Enschede's grid.
+KNOWN_SITES_AMSTERDAM = pd.DataFrame([
+    {"name": "Dam and the canal ring", "kind": "Employment", "x": 0.3, "y": 0.0,
+     "label_dx": 0.0, "label_dy": -0.7, "label_align": "left",
+     "note": "The seventeenth-century plan, UNESCO-listed, unbuildable and "
+             "unredevelopable — the fixed point every later ring grew around."},
+    {"name": "Centraal Station", "kind": "Infrastructure", "x": 0.0, "y": 0.5,
+     "label_dx": 0.0, "label_dy": 0.7, "label_align": "left",
+     "note": "Built on an artificial island in the 1880s, sealing the city from its "
+             "own harbour — the first time Amsterdam filled water to make land."},
+    {"name": "Zuidas", "kind": "Employment", "x": 1.8, "y": -2.8,
+     "label_dx": 0.0, "label_dy": -0.7, "label_align": "left",
+     "note": "The financial district on the ring motorway, still building — one of the "
+             "few places the ledger still permits."},
+    {"name": "Bijlmermeer", "kind": "Housing", "x": 5.2, "y": -3.8,
+     "label_dx": 0.0, "label_dy": -0.7, "label_align": "left",
+     "note": "The 1966 annexation, the honeycomb slabs, the slow demolition and "
+             "rebuild — Amsterdam's biggest single experiment in land."},
+    {"name": "IJburg", "kind": "Housing", "x": 3.5, "y": 3.2,
+     "label_dx": 0.0, "label_dy": 0.7, "label_align": "left",
+     "note": "Neighbourhoods built in the IJmeer on manufactured islands — growth "
+             "bought by the cubic metre of sand, which is why it stopped."},
+    {"name": "Amsterdamse Bos", "kind": "Nature", "x": -3.2, "y": -3.5,
+     "label_dx": 0.0, "label_dy": -0.7, "label_align": "right",
+     "note": "A planted forest three times the size of the canal ring, made in the "
+             "1930s by unemployment schemes. Nobody proposes building on it."},
+    {"name": "Amsterdam Noord", "kind": "Housing", "x": 0.2, "y": 3.8,
+     "label_dx": 0.0, "label_dy": 0.7, "label_align": "left",
+     "note": "Shipyard land across the IJ, turning over from industry to housing "
+             "slower than anyone plans for."},
+])
+
 
 # ---------------------------------------------------------------------
 # Cell features

@@ -122,6 +122,76 @@ def cape_town_population() -> tuple[pd.DataFrame, Series]:
     return frame, series
 
 
+# Johannesburg, City of Johannesburg metropolitan municipality. The census
+# figures are Statistics South Africa. The 2001 jump of over a million people
+# in five years is not a birth rate; it is the 2000 amalgamation redrawing the
+# boundary around areas the 1996 count left out. The dip in 1996 is the same
+# artefact seen from the other side. Pre-1996 figures are the urban
+# agglomeration under boundaries that no longer exist, kept because the
+# seventy-year climb matters, labelled reconstructed.
+_JOHANNESBURG_ANCHORS = {
+    1950: 900_000,
+    1960: 1_250_000,
+    1970: 1_700_000,
+    1980: 2_150_000,
+    1991: 2_600_000,
+    1996: 2_062_000,       # census, transitional boundaries
+    2001: 3_225_608,       # census, metropolitan boundary
+    2011: 4_434_827,       # census
+    2022: 6_060_952,       # census
+    2024: 6_200_000,       # municipal estimate
+}
+
+
+def johannesburg_population() -> tuple[pd.DataFrame, Series]:
+    frame = _interpolate(_JOHANNESBURG_ANCHORS, wobble_scale=9_000)
+    series = Series(
+        "Johannesburg population, 1950–2024", RECONSTRUCTED,
+        "Stats SA censuses 1996, 2001, 2011, 2022; pre-1996 figures are the urban "
+        "agglomeration under former boundaries",
+        "Exact at the census years. Interpolated between them. The 1996 dip and the 2001 "
+        "leap are the same event seen twice: the 2000 amalgamation moved the boundary, not "
+        "the people. The 2022 census figure is Stats SA's, published with an undercount "
+        "adjustment that has been publicly contested.",
+    )
+    return frame, series
+
+
+# Amsterdam, gemeente Amsterdam. Every figure is the municipal population
+# register (bevolkingsregister, later the GBA/CBS counts) — this is the best
+# documented series in the project, and the only one that goes down as well as
+# up. The boundary has been stable since the 1966 annexation of the Bijlmer,
+# which is why this series can be labelled official where the South African
+# ones cannot.
+_AMSTERDAM_ANCHORS = {
+    1950: 846_000,
+    1959: 872_000,         # the post-war peak
+    1970: 807_000,
+    1980: 715_000,
+    1985: 676_000,         # the trough
+    1990: 695_000,
+    2000: 727_000,
+    2010: 767_000,
+    2015: 822_000,
+    2020: 873_000,
+    2024: 938_000,
+}
+
+
+def amsterdam_population() -> tuple[pd.DataFrame, Series]:
+    frame = _interpolate(_AMSTERDAM_ANCHORS, wobble_scale=700)
+    series = Series(
+        "Amsterdam population, 1950–2024", OFFICIAL,
+        "CBS / municipal population register; 1950 figure before the 1966 Bijlmer "
+        "annexation, so the pre-1966 years describe a slightly smaller municipality",
+        "Exact at the anchor years, interpolated between. The only series here with a "
+        "genuine decline: the city lost a fifth of its people between 1959 and 1985 — "
+        "suburbanisation, deindustrialisation and the Bijlmer's failed start — and then "
+        "regained all of it by 2022.",
+    )
+    return frame, series
+
+
 # ---------------------------------------------------------------------
 # The land ledger
 # ---------------------------------------------------------------------
@@ -157,6 +227,32 @@ _CAPE_TOWN_LEDGER = [
      "Mountain, agricultural and rural land beyond the development edge."),
     ("Already built on", -644.0, "used",
      "About 72% of the land inside the edge is already developed."),
+]
+
+_JOHANNESBURG_LEDGER = [
+    ("Municipal area", 1645.0, "total", "The City of Johannesburg, west to east."),
+    ("Already built on", -1180.0, "used",
+     "The urban footprint — townships, suburbs, mines-turned-industry, "
+     "and a CBD that emptied and refilled."),
+    ("Mining land and tailings", -80.0, "hard",
+     "Gold-reef sand dumps and mine-leased land. Technically developable; "
+     "in practice nobody finances it."),
+    ("Dolomitic ground", -60.0, "hard",
+     "Sinkhole-prone limestone in the west. Buildings need raft foundations "
+     "and insurers need persuading."),
+]
+
+_AMSTERDAM_LEDGER = [
+    ("Municipal area", 219.0, "total", "The municipality, water included."),
+    ("Water", -55.0, "hard",
+     "The IJ, the canals, the Amstel and the polder ditches. IJburg proves "
+     "water is a barrier you can pay to move, not one you can ignore."),
+    ("Parks and the Amsterdamse Bos", -25.0, "hard",
+     "The Bos is a twentieth-century plantation the city built for itself "
+     "and is not about to build over."),
+    ("Already built on", -95.0, "used",
+     "The seventeenth-century core, the nineteenth-century ring and the "
+     "post-war extensions, already carrying 940,000 people."),
 ]
 
 
@@ -318,13 +414,121 @@ def _cape_town_sites():
     return sp.KNOWN_SITES_CAPE_TOWN
 
 
+JOHANNESBURG = City(
+    key="johannesburg",
+    name="Johannesburg",
+    country="South Africa",
+    accent="#d4a017",
+    land_area_km2=1_645.0,
+    buildable_km2=1_500.0,
+    geometry=Geometry(
+        extent_km=26.0,
+        radius_km=float(np.sqrt(1_500 / np.pi)),   # ≈21.9 km
+        spacing_km=1.0,
+        # The Gautrain spine and the rail commuters' lines: Park Station,
+        # Rosebank, Sandton, Midrand — and Soweto, a metro away from its jobs.
+        stations=((0.0, 0.0), (5.0, 5.0), (9.0, 8.0), (16.0, 15.0), (-8.0, -13.0)),
+        density_decay=0.05,
+        hard_edge_x=None,                      # nothing stops this city. that is the point
+        protected_centre=(-4.0, -2.0),         # Melville Koppies, the rocky ridge
+        protected_radius_km=1.0,
+        edge_margin_km=3.0,
+        built_km2=1_180.0,
+    ),
+    binding_constraint=(
+        "Nothing physical. No mountain, no sea, no urban edge — growth is stopped by "
+        "the price of the land and the geography of where work is, not by the land itself."
+    ),
+    permitted_km2=300.0,
+    permitted_note=(
+        "Johannesburg reaches the bottom of the ledger with about 300 km² of genuinely "
+        "serviceable land — and unlike the other cities here, that is not the constraint "
+        "anyone names. The city has always had room; the question the other cities do not "
+        "face is room for whom, and where, at what price."
+    ),
+    population_note=(
+        "A seventy-year climb with one artefact in it: the dip in 1996 and the leap in "
+        "2001 are the 2000 amalgamation moving a boundary, not people leaving and "
+        "returning. Six million people on a gold reef nobody was supposed to live on."
+    ),
+    forecast_note=(
+        "The series that most tempts a model to be confident: nearly exponential for "
+        "seventy years. But the last two census intervals disagree about the rate, and "
+        "the 2022 count itself is contested — the honest forecast is a wide band with "
+        "a warning label."
+    ),
+)
+
+AMSTERDAM = City(
+    key="amsterdam",
+    name="Amsterdam",
+    country="Netherlands",
+    accent="#b5446e",
+    land_area_km2=219.0,
+    buildable_km2=120.0,
+    geometry=Geometry(
+        extent_km=8.5,
+        radius_km=float(np.sqrt(120 / np.pi)),    # ≈6.2 km
+        spacing_km=0.3,
+        # Centraal, Zuid, Sloterdijk, Bijlmer ArenA, Noord — five nodes of a
+        # metro region pretending to be one medium-sized municipality.
+        stations=((0.0, 0.5), (1.8, -2.8), (-1.6, 1.8), (5.2, -3.8), (0.2, 3.8)),
+        density_decay=0.22,
+        hard_edge_x=None,                      # the municipal border is on every side
+        protected_centre=(-3.2, -3.5),         # the Amsterdamse Bos
+        protected_radius_km=1.9,
+        edge_margin_km=1.2,
+        built_km2=95.0,
+    ),
+    binding_constraint=(
+        "A municipal border it cannot move. The last annexation was 1966; since then "
+        "the city has grown by densifying and by building into its own water."
+    ),
+    permitted_km2=10.0,
+    permitted_note=(
+        "Amsterdam reaches the bottom of the ledger with about 10 km² — the housing "
+        "pipeline: Haven-Stad's docks, the last Zuidas plots and whatever the city "
+        "decides it can fill the IJ with next. The land is nearly gone, the demand is "
+        "not, and the price of a house says so."
+    ),
+    population_note=(
+        "The only U-shape in the project. A fifth of the city left between 1959 and "
+        "1985 — for Purmerend and Almere, for the car — and the whole loss was "
+        "recovered by 2022. Both halves are real and a model must explain both."
+    ),
+    forecast_note=(
+        "The test the other cities do not set: a model trained on the recovery alone "
+        "sees steep growth forever; a model that remembers the decline refuses to "
+        "believe it. The truth is that a municipality this size is full when policy "
+        "says it is full, not when a curve bends."
+    ),
+)
+
+
+def _johannesburg_sites():
+    from . import spatial as sp
+    return sp.KNOWN_SITES_JOHANNESBURG
+
+
+def _amsterdam_sites():
+    from . import spatial as sp
+    return sp.KNOWN_SITES_AMSTERDAM
+
+
 CAPE_TOWN._population = cape_town_population
 CAPE_TOWN._sites = _cape_town_sites
 CAPE_TOWN._ledger = _CAPE_TOWN_LEDGER
 ENSCHEDE._population = _enschede_population
 ENSCHEDE._ledger = _ENSCHEDE_LEDGER
+JOHANNESBURG._population = johannesburg_population
+JOHANNESBURG._sites = _johannesburg_sites
+JOHANNESBURG._ledger = _JOHANNESBURG_LEDGER
+AMSTERDAM._population = amsterdam_population
+AMSTERDAM._sites = _amsterdam_sites
+AMSTERDAM._ledger = _AMSTERDAM_LEDGER
 
-CITIES: dict[str, City] = {c.name: c for c in (ENSCHEDE, CAPE_TOWN)}
+CITIES: dict[str, City] = {c.name: c for c in
+                           (ENSCHEDE, CAPE_TOWN, JOHANNESBURG, AMSTERDAM)}
 
 
 def pick(name: str) -> City:
