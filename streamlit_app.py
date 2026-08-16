@@ -1515,6 +1515,164 @@ def page_method() -> None:
     )
 
 
+def page_best_practices() -> None:
+    """The practices this project runs on, stated as transferable rules.
+
+    This is the method section's companion: where `page_method` says where the
+    numbers come from, this page says what the analysis does with them and why.
+    Every rule here is one the project already enforces — in the guard tests,
+    in the chart grammar, in the voice — so the page is a description of
+    practice, not an aspiration. Each rule is written to survive being lifted
+    out of this project and applied to another city.
+    """
+    header("Best practices in urban data science",
+           "A method is a set of habits you can state before you see the data, and "
+           "defend after. These are the habits this project runs on — each one is "
+           "enforced somewhere in the code, not just asserted in prose, and each one "
+           "is written to transfer to any city, not just these two.")
+
+    st.subheader("Rates over levels")
+    st.markdown(
+        "A level is trivia; a rate is physics. Cape Town has more people than Enschede, "
+        "which tells you nothing you could act on. What matters is how fast each city "
+        "converts inputs into movement, inventions, water and watts — and what governs "
+        "that rate. The comparison between a city of millions and a city of thousands is "
+        "only ever fair as a rate, never as a total."
+    )
+    st.markdown(
+        "The discipline is: normalise until the comparison is fair, then normalise once "
+        "more. Per capita, then per worker, then per worker-hour. Divide two things nobody "
+        "thought to divide — that ratio is usually the article. Cost per boarding, cost per "
+        "patent, litres per rand."
+    )
+
+    st.subheader("Name the stock, the flow, the delay, the loop")
+    st.markdown(
+        "Behaviour follows structure, not intention. A city that keeps sprawling is not "
+        "failing to want density; it is a stock of built land fed by a flow of approvals, "
+        "with a delay between the decision and the building, and a loop that makes the "
+        "cheapest land the next place to build. Until you have named all four, you have "
+        "described a symptom, not a system."
+    )
+    st.markdown(
+        "Every analysis here resolves to a stock, a flow, a delay and a loop, and ends by "
+        "naming the leverage point — the place in the structure where a small change moves "
+        "the whole system — and its rank on Meadows' twelve-place hierarchy. A finding "
+        "without a named leverage point is journalism, not analysis."
+    )
+
+    st.subheader("Every number carries its provenance")
+    st.markdown(
+        "An argument is only as good as its weakest number, so every figure carries a label "
+        "saying how solid it is, right next to the figure — not in a footnote. The classes "
+        "are few on purpose: official, derived, engineering, estimate, and for the modelling "
+        "layer, reconstructed and synthetic. More categories would just give the author "
+        "somewhere to hide."
+    )
+    st.markdown(
+        "The rule that makes this bite is inheritance: a result takes the class of its "
+        "weakest input. Combining an official series with a synthetic one does not yield "
+        "something half-official — it yields something synthetic, and it is labelled that "
+        "way at every point of use, in red, not in grey."
+    )
+
+    st.subheader("The apparatus manufactures credibility — guard against it")
+    st.markdown(
+        "A model fitted to a weak series produces a forecast, an R², a confidence band and "
+        "a map that all look exactly like the output of a model fitted to real data. The "
+        "machinery does not know the difference, so the inputs must announce themselves. "
+        "Synthetic data is present so the machinery can be built and tested end to end, and "
+        "it is labelled synthetic wherever it appears — never allowed to pass as data about "
+        "the city."
+    )
+    st.markdown(
+        "The same honesty applies to the model's own score. A good backtest score on "
+        "synthetic labels measures whether the learner recovered the assumptions put there "
+        "on purpose — and the page says so in red rather than in a footnote."
+    )
+
+    st.subheader("Frame before you measure")
+    st.markdown(
+        "The first question is not \"how big\" but \"what is this actually a case of.\" "
+        "Enschede's nitrogen limit is not a case of environmental protection; it is a case "
+        "of a constraint with no edge, a field rather than a polygon, and that reframing is "
+        "what makes it comparable to Cape Town's urban edge. Get the frame wrong and every "
+        "measurement that follows is precise about the wrong thing."
+    )
+
+    st.subheader("State what would change your mind")
+    st.markdown(
+        "A claim you cannot imagine being wrong about is not a finding, it is a commitment. "
+        "Every essay here carries a box naming the observation that would overturn it. The "
+        "test is not whether the claim is right — it is whether the claim is falsifiable, "
+        "and whether the author has said so in advance rather than after the fact."
+    )
+
+    st.subheader("One chart, one claim")
+    st.markdown(
+        "If a chart makes two points, it is two charts. The accent colour carries the claim; "
+        "everything else is muted. Cape Town and Enschede get fixed colours across every "
+        "chart in the project, so the reader never has to check a legend. Series are "
+        "direct-labelled at their ends, and the only gridline is a single zero line."
+    )
+    st.markdown(
+        "For two cities at wildly different scale, the single most useful move is to index "
+        "to 100 at a stated base year, or to go per-capita. A city of millions against a "
+        "city of thousands is only ever honest on the same axes when one of those two "
+        "normalisations has been applied — and the chart says which one."
+    )
+
+    st.subheader("Distrust the official category")
+    st.markdown(
+        "\"Public transport\" that excludes the minibus routes that actually move the city "
+        "is a category error, not a statistic. The category is a claim about the world, and "
+        "it deserves the same scrutiny as the number inside it. Before you trust a series, "
+        "ask what it leaves out — the answer is often the story."
+    )
+
+    st.subheader("Long series, and the question of why not")
+    st.markdown(
+        "If a series does not go back twenty years, ask why not. The answer is often the "
+        "story: the data stops where the institution stopped collecting it, and that "
+        "boundary is itself a fact about the city. A single year is a snapshot; a rate "
+        "needs a series long enough to see the slope."
+    )
+
+    st.divider()
+    st.subheader("Where each rule is enforced")
+    st.markdown(
+        "These are not aspirations. Each one is a guard test or a code convention, so the "
+        "build fails when the practice is broken rather than when someone remembers to "
+        "check:"
+    )
+    for title, body in [
+        ("No bare numbers",
+         "A guard test fails the build if any numeral appears in prose outside a "
+         "{{metric:...}} directive. Numbers reach the page only through a tested metric, "
+         "never typed by hand into a sentence."),
+        ("Provenance sidecars",
+         "Every curated dataset ships with a sidecar naming its source, licence and "
+         "checksum, and a guard test fails the build if any parquet lacks one or its "
+         "checksum drifts."),
+        ("One function per figure",
+         "Every figure is a pure function returning a chart, registered in a single "
+         "registry, so a figure cannot claim a number it does not compute."),
+        ("The weakest input rules",
+         "A result inherits the class of its weakest input, enforced in code, so a "
+         "synthetic input cannot quietly upgrade a conclusion to official."),
+    ]:
+        st.markdown(f"**{title}** — {body}")
+
+    caveat(
+        "A method is not a guarantee",
+        "These practices reduce the ways an analysis can fool its author and its reader. "
+        "They do not make the analysis right. The honest claim is narrower: that the "
+        "arithmetic is checkable, the provenance is visible, and the places where the "
+        "conclusion could be wrong are named in advance.",
+        level="note",
+    )
+
+
 # =====================================================================
 # Charts
 # =====================================================================
@@ -2102,6 +2260,9 @@ PARTS: dict[str, dict[str, object]] = {
     "8 · Sources": {
         "8.1 Where the numbers come from": lambda: page_method(),
     },
+    "9 · Method": {
+        "9.1 Best practices in urban data science": lambda: page_best_practices(),
+    },
 }
 
 PART_BLURB = {
@@ -2116,6 +2277,7 @@ PART_BLURB = {
                             "to the nitrogen account.",
     "7 · Workbench": "Set two futures against each other and read the difference.",
     "8 · Sources": "Every number, where it came from, and what this gets wrong.",
+    "9 · Method": "The practices this analysis runs on, stated as rules that transfer to any city.",
 }
 
 # Which parts analyse both cities. Shown in the menu so a reader can see at a
@@ -2124,6 +2286,7 @@ PART_BLURB = {
 BOTH_CITIES = {
     "1 · The argument", "2 · How much room is left", "4 · People and growth",
     "5 · Where building goes", "6 · How people travel", "7 · Workbench", "8 · Sources",
+    "9 · Method",
 }
 
 
