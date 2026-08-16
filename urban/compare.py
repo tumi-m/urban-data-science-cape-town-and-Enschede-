@@ -234,9 +234,12 @@ def scorecard() -> None:
     # different places, for good reasons. Saying so here is cheaper than a
     # reader finding two different numbers for "Cape Town's density" three
     # sections apart and concluding one of them is wrong.
+    built_by_city = dict(zip(df["City"], df["Built-up, km²"]))
+    cape_town_built = built_by_city.get("Cape Town", 0.0)
+    enschede_built = built_by_city.get("Enschede", 0.0)
     st.caption(
         f"**On density.** The row above divides by land *already built on* — "
-        f"{b['Built-up, km²']:,.0f} km² for Cape Town, {a['Built-up, km²']:,.0f} km² for "
+        f"{cape_town_built:,.0f} km² for Cape Town, {enschede_built:,.0f} km² for "
         f"Enschede. The Cape Town section quotes {4_800_000 / 895:,.0f} per km² instead, "
         f"because it divides by the whole 895 km² inside the urban edge, including the 251 km² "
         f"not yet developed. Both are right; they answer different questions. The figure here "

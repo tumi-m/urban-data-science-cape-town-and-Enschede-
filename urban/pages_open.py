@@ -60,7 +60,8 @@ def page_opening() -> None:
     # evidence is asking for trust it has not earned yet. These four are the
     # whole argument, computed from the same series the later sections use.
     df = compare.scorecard_frame()
-    en, ct = df.iloc[0], df.iloc[1]
+    en = df[df["City"] == "Enschede"].iloc[0]
+    ct = df[df["City"] == "Cape Town"].iloc[0]
     stats([
         ("Cape Town may build on", f"{ct['Land permitted, km²']:,.0f} km²",
          f"Out of {ct['Municipal area, km²']:,.0f} km² of municipality — "
@@ -332,7 +333,8 @@ def _opening_land(df: pd.DataFrame) -> None:
     keeps for exactly this case.
     """
     rows = []
-    for city, row in [("Enschede", df.iloc[0]), ("Cape Town", df.iloc[1])]:
+    for city, row in [("Enschede", df[df["City"] == "Enschede"].iloc[0]),
+                      ("Cape Town", df[df["City"] == "Cape Town"].iloc[0])]:
         rows.append({"measure": "Municipal area", "city": city,
                      "km²": float(row["Municipal area, km²"])})
         rows.append({"measure": "Already built on", "city": city,
