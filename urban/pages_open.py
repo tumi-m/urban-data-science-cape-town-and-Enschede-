@@ -299,8 +299,9 @@ def _opening_divergence() -> None:
             "year": f["year"], "entity": c.name, "index": f["population"] / base * 100,
         }))
     both = pd.concat(rows, ignore_index=True)
-    shared = sorted(set(both[both["entity"] == "Enschede"]["year"])
-                    & set(both[both["entity"] == "Cape Town"]["year"]))
+    year_sets = [set(both[both["entity"] == c.name]["year"])
+                 for c in cities.CITIES.values()]
+    shared = sorted(set.intersection(*year_sets))
     palette = {c.name: c.accent for c in cities.CITIES.values()}
 
     figure(

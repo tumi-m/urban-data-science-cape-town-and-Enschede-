@@ -135,3 +135,25 @@ def test_scorecard_covers_all_registered_cities():
     assert permitted["Johannesburg"] > permitted["Amsterdam"]
     assert permitted["Johannesburg"] > permitted["Cape Town"]
     assert df["Growth since 1950"].notna().all()
+
+
+def test_scorecard_renders_without_two_city_unpacking():
+    """Regression: the scorecard caption must not reference the removed
+    two-city `a`/`b` unpacking. It reads built-up area from the frame by
+    name, so it works for any registry size. We render the block through
+    Streamlit's test harness — the only way to exercise the caption path
+    that crashed in production (NameError on `a`/`b`)."""
+    from streamlit.testing.v1 import AppTest
+
+    # `from_function` recompiles the body in isolation, so the script must
+    # carry its own imports. `from_string` lets us point at the real module
+    # function while keeping the harness self-contained.
+    at = AppTest.from_string(
+        "import urban.compare as compare\ncompare.scorecard()\n",
+        default_timeout=30,
+    )
+    at.run()
+    assert not at.exception, [e.value for e in at.exception]
+    # The caption must name both contrast cities with their built-up areas.
+    caption = " ".join(c.value for c in at.caption)
+    assert "Cape Town" in caption and "Enschede" in caption
