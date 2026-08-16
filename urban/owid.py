@@ -45,6 +45,7 @@ def line_with_end_labels(
     height: int = 330,
     y_domain: tuple | None = None,
     zero: bool = False,
+    log: bool = False,
     x_format: str = "d",
 ) -> alt.Chart:
     """Multi-series lines, labelled at the right-hand end.
@@ -52,6 +53,9 @@ def line_with_end_labels(
     When one entity is the subject, it is picked out and the rest recede to a
     muted grey. Emphasis rather than identity: the greys are not eight
     categories the reader has to tell apart, they are context.
+
+    `log` switches the measured axis to a log scale, for comparing growth
+    rates rather than levels. Callers must say so in the subtitle.
     """
     entities = list(df[entity].unique())
     if highlight and highlight in entities:
@@ -69,7 +73,7 @@ def line_with_end_labels(
         opacity = alt.value(1.0)
         stroke = colour
 
-    y_scale = alt.Scale(zero=zero)
+    y_scale = alt.Scale(zero=zero, type="log" if log else "linear")
     if y_domain:
         y_scale = alt.Scale(domain=list(y_domain), nice=False)
 
@@ -394,16 +398,29 @@ def residual_plot(df: pd.DataFrame, height: int = 200) -> alt.Chart:
 
 def horizontal_bars(df: pd.DataFrame, label: str, value: str, *,
                     x_title: str, height: int = 200, value_format: str = ",.2f",
-                    diverging: bool = False, label_limit: int = 320) -> alt.Chart:
-    """Ranked bars with the value at the tip."""
+                    diverging: bool = False, label_limit: int = 320,
+                    x_domain: tuple | None = None,
+                    rule: float | None = None) -> alt.Chart:
+    """Ranked bars with the value at the tip.
+
+    `x_domain` pins the measured axis, for when the bars differ by a small
+    amount on a large base and a zero baseline would flatten the difference
+    into invisibility. Use it to show a spread, not to exaggerate one.
+
+    `rule` draws a dashed reference line at that value — a threshold the bars
+    are read against, such as a naive baseline. It is a line, not a bar, so it
+    cannot be mistaken for one more series.
+    """
     order = df.sort_values(value, ascending=False)[label].tolist()
     colour = (alt.condition(alt.datum[value] >= 0, alt.value(SERIES[0]), alt.value(SERIES[1]))
               if diverging else alt.value(SERIES[0]))
+    x_scale = (alt.Scale(domain=list(x_domain), nice=False) if x_domain
+               else alt.Scale(nice=True, padding=8))
     bars = alt.Chart(df).mark_bar(cornerRadiusEnd=4, height=16).encode(
         y=alt.Y(f"{label}:N", sort=order, title=None,
                 axis=alt.Axis(labelColor=INK, labelFontSize=12, labelLimit=label_limit)),
         x=alt.X(f"{value}:Q", title=x_title,
-                scale=alt.Scale(nice=True, padding=8),
+                scale=x_scale,
                 axis=alt.Axis(grid=True, gridColor=GRID)),
         color=colour,
         tooltip=[label, alt.Tooltip(f"{value}:Q", format=value_format)])
@@ -411,7 +428,12 @@ def horizontal_bars(df: pd.DataFrame, label: str, value: str, *,
         align="left", dx=8, fontSize=11, color=INK_2).encode(
         y=alt.Y(f"{label}:N", sort=order, title=None),
         x=f"{value}:Q", text=alt.Text(f"{value}:Q", format=value_format))
-    return style(alt.layer(bars, labels).properties(height=height))
+    layers = [bars, labels]
+    if rule is not None:
+        layers.append(
+            alt.Chart(pd.DataFrame({"x": [rule]})).mark_rule(
+                strokeWidth=1.5, color=INK_3, strokeDash=[4, 3]).encode(x="x:Q"))
+    return style(alt.layer(*layers).properties(height=height))
 
 
 def land_split_bar(df: pd.DataFrame, total_km2: float) -> alt.Chart:

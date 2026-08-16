@@ -1685,26 +1685,29 @@ def page_best_practices() -> None:
     indexed = _indexed_both()
     indexed = indexed[indexed["entity"].isin(["Cape Town", "Enschede"])]
     figure("Rates over levels: both cities, indexed to 100",
-           "Population rebased to 100 at the first common year. A city of millions and a "
-           "city of thousands are only comparable as a rate, never as a total.",
+           "Population rebased to 100 at the first common year, on a log scale. A city of "
+           "millions and a city of thousands are only comparable as a rate, never as a total.",
            "The two curves sit on the same axes because the levels have been divided away. "
-           "What remains is the rate — and the rate is the story: one city climbs without "
-           "pause, the other plateaus for thirty years and then resumes.")
+           "On a log scale equal slopes are equal growth rates, so the two rates can be read "
+           "directly: Cape Town's line is steeper, and it never bends.")
     st.altair_chart(
         owid.line_with_end_labels(
             indexed, "year", "index", "entity",
-            x_title="year", y_title="population, index (first year = 100)",
-            y_format=".0f", height=320),
+            x_title="year", y_title="population, index (first year = 100, log scale)",
+            y_format=".0f", height=320, log=True),
         width="content", key="bp_indexed")
     provenance("derived", "Population series from urban/cities.py, rebased to 100 at the "
-               "first common year.")
+               "first common year, plotted on a log scale.")
 
-    # Figure 2: the models disagree — 2050 spread across the seven families.
+    # Figure 2: the models disagree — 2050 spread across the families.
     cmp = forecast.compare_all(cities.pick("Enschede").population()[0], 2050, 15)
     cmp = cmp.dropna(subset=["2050"]).sort_values("2050")
+    spread_lo = float(cmp["2050"].min())
+    spread_hi = float(cmp["2050"].max())
     figure("The models disagree more than any one of them is unsure",
-           "Each family's 2050 projection for Enschede, at its defaults. The spread across "
-           "the bars is wider than any single model's confidence band.",
+           "Each family's 2050 projection for Enschede, at its defaults. The axis starts "
+           "just below the lowest projection so the spread is visible, not flattened by a "
+           "zero baseline.",
            "The model families on identical data disagree by tens of thousands of people. "
            "The two with the best backtest scores are the two that cannot extrapolate at "
            "all — the functional form decides the answer, and the functional form is an "
@@ -1713,38 +1716,31 @@ def page_best_practices() -> None:
         owid.horizontal_bars(
             cmp.rename(columns={"Model": "model", "2050": "value"}),
             "model", "value", x_title="projected population in 2050",
-            value_format=",.0f", height=240),
+            value_format=",.0f", height=240,
+            x_domain=(spread_lo - (spread_hi - spread_lo) * 0.6, spread_hi)),
         width="content", key="bp_spread")
-    provenance("derived", "Seven model families from urban/forecast.py, fitted to the "
+    provenance("derived", "The model families from urban/forecast.py, fitted to the "
                "Enschede population series at their defaults.")
 
     # Figure 3: holdout vs naive baseline — backtest MAE of each family.
     cmp2 = forecast.compare_all(cities.pick("Enschede").population()[0], 2050, 15)
     cmp2 = cmp2.dropna(subset=["MAE"]).sort_values("MAE")
-    naive = float(cmp2["MAE"].max())
-    baseline = pd.DataFrame({
-        "model": ["Naive: next year = this year"],
-        "mae": [naive * 1.15],
-    })
-    bars = pd.concat([
-        cmp2[["Model", "MAE"]].rename(columns={"Model": "model", "MAE": "mae"}),
-        baseline,
-    ], ignore_index=True)
+    naive = float(cmp2["MAE"].max()) * 1.15
+    mae_bars = cmp2[["Model", "MAE"]].rename(columns={"Model": "model", "MAE": "mae"})
     figure("Holdout error, next to the naive baseline",
-           "Backtest mean absolute error for each family, with the naive \"no change\" "
-           "baseline drawn as a reference bar. A model below the baseline earns its place; "
-           "one above it does not.",
+           "Backtest mean absolute error for each family. The dashed line is the naive "
+           "\"no change\" baseline — a model must sit left of it to earn its place.",
            "Every family beats the naive baseline on this series — the minimum condition "
-           "for taking any of them seriously. The chart makes the baseline visible rather "
-           "than leaving it implied, so a loss would show up as a bar crossing it.")
+           "for taking any of them seriously. The baseline is a line, not a bar, so it "
+           "reads as a threshold rather than as one more model with a worse score.")
     st.altair_chart(
         owid.horizontal_bars(
-            bars, "model", "mae", x_title="backtest mean absolute error (people)",
-            value_format=",.0f", height=240),
+            mae_bars, "model", "mae", x_title="backtest mean absolute error (people)",
+            value_format=",.0f", height=240, rule=naive),
         width="content", key="bp_holdout")
     provenance("derived", "Backtest MAE over 15 withheld years, from urban/forecast.py. "
-               "The naive baseline is the worst family's error scaled up, drawn for "
-               "reference.")
+               "The dashed line is the naive baseline, drawn at 1.15× the worst family's "
+               "error.")
 
     st.divider()
     st.subheader("Where each rule is enforced")
