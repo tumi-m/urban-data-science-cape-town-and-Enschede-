@@ -19,6 +19,7 @@
 | phase0-memory-bank | 0 | ~4k | ~5k | ~54k | T0.3 seven memory-bank files seeded |
 | phase0-gate | 0 | ~5k | ~4k | ~63k | T0.4 io.py, peek.py, guard tests, Makefile, make check green |
 | phase1-link-sweep | 1 | ~18k | ~7k | ~88k | resolved all §5.1 URLs; 4 follow-ups logged in dataCatalogue.md |
+| phase1-census-spine | 1 | ~30k | ~12k | ~130k | za_census_2022_smallarea: curated spine (9 rows) + sidecar + 7 tests; small-area not bulk-downloadable, documented honestly |
 
 Phase 0 closes slightly over the 60k soft budget (~63k est.), under the 90k
 tripwire. Cause: full repo-state audit required first (user directive: skip

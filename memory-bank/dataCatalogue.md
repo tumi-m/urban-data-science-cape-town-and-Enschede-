@@ -2,7 +2,8 @@
 
 | name | publisher | unit | period | rows | licence | caveat |
 |------|-----------|------|--------|------|---------|--------|
-| _(empty — Phase 1 will append one line per ingest, in this order: za_census_2022_smallarea, nl_cbs_wijkbuurt, ct_dam_levels_weekly, eskom_eaf_stages, nl_klimaatmonitor_energy, nl_odin_mobility, ct_transit_gtfs, ct_minibus_routes, patents_epo_regional, openalex_institutions, ghsl_builtup_timeseries, osm_networks_metrics)_ | | | | | | |
+| za_census_2022_smallarea | Statistics South Africa | national + municipality | 2011–2022 | 9 | Stats SA open data (Statistics Act 6 of 1999) | small-area counts NOT bulk-downloadable (SuperWEB2/ISIbalo only); 2022 municipal count not bulk-published — 2011 CCT baseline only |
+| _(next: nl_cbs_wijkbuurt, ct_dam_levels_weekly, eskom_eaf_stages, nl_klimaatmonitor_energy, nl_odin_mobility, ct_transit_gtfs, ct_minibus_routes, patents_epo_regional, openalex_institutions, ghsl_builtup_timeseries, osm_networks_metrics)_ | | | | | | |
 
 ## Link sweep — 2026-08-16 (Phase 1 task 1, DONE)
 

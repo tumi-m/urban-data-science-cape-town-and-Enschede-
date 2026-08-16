@@ -1,0 +1,28 @@
+{
+  "name": "za_census_2022_smallarea",
+  "source_url": "https://www.statssa.gov.za/?p=16716",
+  "publisher": "Statistics South Africa",
+  "licence": "Stats SA open data (Statistics Act 6 of 1999); reuse with attribution",
+  "retrieved_at": "2026-08-16T09:23:11Z",
+  "sha256": "b3719410a5bb55cbb49b4aa61b5bcffabd0b0eb7b1824c9b68ff16a5ccff4fd8",
+  "rows": 9,
+  "columns": {
+    "geography": "str",
+    "census_year": "i64",
+    "indicator": "str",
+    "value": "i64",
+    "unit": "str"
+  },
+  "spatial_unit": "national + municipality (no small-area granularity)",
+  "temporal_range": [
+    "2011",
+    "2022"
+  ],
+  "caveats": [
+    "Census 2022 small-area (ward / sub-place) counts are NOT bulk-downloadable: Stats SA serves them only through the interactive SuperWEB2 and ISIbalo portals, which have no machine-readable API.",
+    "The City of Cape Town 2022 municipal count is not bulk-published; only the 2011 municipal baseline (3,740,026) is curated here.",
+    "Census 2022 was assessed 'Fit for Purpose' by the Statistics Council, but independent demographers (Moultrie & Dorrington 2024) have raised accuracy concerns, especially for the Western Cape.",
+    "This spine is national + municipal resolution only. Per-capita rates for Cape Town must use a later small-area source or a documented estimate until a bulk endpoint opens."
+  ],
+  "refresh": "decennial (next census 2032); re-check for a bulk small-area endpoint before any per-capita Cape Town metric"
+}
