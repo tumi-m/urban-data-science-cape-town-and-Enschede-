@@ -253,10 +253,22 @@ MODELS: dict[str, ModelSpec] = {
         extrapolates=True, uncertainty=False,
         blurb="A saturating curve that rises fast and decelerates slowly — asymmetric, which "
               "fits a city that grew quickly then stalled better than a logistic does.",
-        caution="Sensitive to the starting guess; move the capacity slider and watch 2050 move.",
+                caution="Sensitive to the starting guess; move the capacity slider and watch 2050 move.",
+    ),
+    "capped": ModelSpec(
+        key="capped", label="Land-constrained", family="Heuristic",
+        params=[
+            Param("capacity_hint", "Hint at max population", "int",
+                  895_000, 10_000, 2_000_000, 10_000,
+                  help="Hint at maximum population the urban edge can support; used to cap the forecast."),
+        ],
+        build=lambda capacity_hint=895_000: _CurveModel(
+            _logistic, float(capacity_hint), 0.05),
+        extrapolates=True, uncertainty=False,
+        blurb="A logistic growth curve capped at the urban edge capacity. For Cape Town, the urban edge is 895 km\u00b2 for 4.8M people — this model honors that physical limit.",
+        caution="The capacity_hint is a prior, not a hard ceiling — the curve still asymptotes at the hint value.",
     ),
 }
-
 
 # ---------------------------------------------------------------------
 # Fitting and evaluation

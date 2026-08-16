@@ -141,6 +141,9 @@ urban/                  the modelling layer
   owid.py               chart forms in the Our World in Data idiom
   geo.py                real coordinates and OpenStreetMap maps
   capetown.py           Cape Town figures, portal fetch path, and further analysis
+  sources.py            ArcGIS feature-service client for Cape Town open data
+  cct_catalog.py        derived figures from real Cape Town layers; evidence table
+  lens.py               Evans/Dediu chart kit: trajectory, crossing_time, share_vs_growth
   theme.py / ui.py      tokens and layout primitives shared with the app
 ```
 
@@ -153,6 +156,13 @@ widgets and compute. The Next.js platform is the same argument as a static essay
 ```bash
 streamlit run streamlit_app.py     # or point Streamlit Cloud at this file
 ```
+
+## Reproducibility
+
+The Python environment is pinned in `repro_lock.txt` — install with
+`pip install -r repro_lock.txt` to reproduce the exact verified stack.
+The Streamlit app caches layer fetches (`st.cache_data` on `_cct_catalog`)
+so re-renders do not re-hit the Cape Town open data portal.
 
 The sidebar has two controls rather than one long list. The first picks what you
 want to look at — **Overview (both cities)**, **Enschede**, **Cape Town**, or

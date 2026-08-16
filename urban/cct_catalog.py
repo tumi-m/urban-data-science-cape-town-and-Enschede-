@@ -105,6 +105,7 @@ def _fetch_layer(layer: str) -> tuple[object | None, str]:
         return None, "fallback"
     try:
         gdf = gpd.GeoDataFrame.from_features(raw["features"])
+        gdf = gdf.set_crs(epsg=4326)
     except Exception:
         return None, "fallback"
     if gdf.empty:
@@ -171,7 +172,7 @@ class Catalog:
             edge_total = float(edge.geometry.area.sum())
             if edge_total <= 0:
                 return LAYERS["stations"]["fallback"]
-            buffered = stations.geometry.buffer(radius_m).unary_union
+            buffered = stations.geometry.buffer(radius_m).union_all()
             reach = float(edge.intersection(buffered).area.sum())
             return Derived(round(reach / 1e6, 1), DERIVED,
                            "buffer of station points in UTM 34S", "km²")

@@ -116,6 +116,9 @@ def crossing_time(df: pd.DataFrame, *, x: str, a: str, b: str,
     for i in range(1, len(s)):
         d0 = av[i - 1] - bv[i - 1]
         d1 = av[i] - bv[i]
+        if d1 == 0:
+            crossing = float(xv[i])
+            break
         if d0 * d1 < 0:
             frac = d0 / (d0 - d1)
             crossing = float(xv[i - 1] + frac * (xv[i] - xv[i - 1]))

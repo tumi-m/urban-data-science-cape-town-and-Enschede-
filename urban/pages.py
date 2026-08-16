@@ -52,6 +52,18 @@ def _grid(city_name: str = "Enschede"):
     return sp.build_grid(geometry=cities.pick(city_name).geometry)
 
 
+@st.cache_data
+def _cct_catalog():
+    """A cached Catalog of Cape Town layers.
+
+    Streamlit Cloud has outbound network; local CI/sandbox deploys may not.
+    The catalog handles the fallback itself; this wrapper just prevents
+    re-fetching on every re-render.
+    """
+    from .cct_catalog import Catalog
+    return Catalog()
+
+
 # The forecasting calls below are cached on primitives (names, parameter
 # tuples, years) rather than on the frame and spec objects, because those are
 # awkward for the hasher and the primitives determine the result exactly.
@@ -1009,7 +1021,25 @@ def page_cape_town() -> None:
          f"{ct.PROTECTED_HA:,} hectares formally protected, before biodiversity areas count."),
         ("Original plant life gone", f"{ct.VEGETATION_LOST_PCT}%",
          "Mostly on the flat lowlands, which is where building is easiest."),
-    ])
+        ])
+    # ---- evidence table: provenance of every figure on this page ----
+    cat = _cct_catalog()
+    st.divider()
+    st.caption("How each figure on this page was produced")
+    evidence = cat.evidence()
+    # Format the values for display
+    display = evidence.copy()
+    display["value"] = display.apply(
+        lambda r: f"{r['value']:,.1f} {r['unit']}" if pd.notna(r['value']) else "—",
+        axis=1)
+    st.dataframe(
+        display[["figure", "value", "class", "source"]],
+        hide_index=True, use_container_width=True,
+    )
+    provenance("derived",
+               "Recomputed from City of Cape Town layers where reachable; "
+               "published figures marked as estimate when offline. "
+               "See the table above for each figure's class and source.")
 
     st.divider()
     figure("Where Cape Town's land goes",
