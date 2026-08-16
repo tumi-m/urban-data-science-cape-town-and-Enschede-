@@ -45,7 +45,7 @@ from urban.ui import (  # noqa: E402
 )
 from urban.pages import (  # noqa: E402
     page_cape_town, page_compare, page_development, page_population,
-    page_projection, page_simulation,
+    page_projection, page_simulation, _indexed_both,
 )
 from urban.pages_behaviour import page_behaviour, page_scaling  # noqa: E402
 from urban.pages_simulator import page_simulator  # noqa: E402
@@ -53,6 +53,7 @@ from urban.pages_open import page_opening  # noqa: E402
 from urban import chrome, geo  # noqa: E402
 from urban import gravity  # noqa: E402
 from urban import llm  # noqa: E402
+from urban import cities, forecast, owid  # noqa: E402
 
 
 # =====================================================================
@@ -1637,6 +1638,113 @@ def page_best_practices() -> None:
         "boundary is itself a fact about the city. A single year is a snapshot; a rate "
         "needs a series long enough to see the slope."
     )
+
+    st.divider()
+    st.subheader("Machine learning, and the honesty it demands")
+    st.markdown(
+        "A fitted model is an argument about the future dressed as a measurement of the "
+        "past. The apparatus manufactures credibility whether or not the inputs deserve "
+        "it, so the practices below are about keeping the model honest — about what it "
+        "was trained on, how it was scored, and what it cannot do."
+    )
+
+    st.markdown("**Report the holdout against a naive baseline — including when you lose.** "
+                "A model is only as good as the trivial thing it must beat. A forecast that "
+                "cannot beat \"next year equals this year\" is not a forecast, it is a "
+                "decorated average. The score is reported next to the baseline, not instead "
+                "of it, and a loss is reported as a loss.")
+    st.markdown("**Calibration matters more than accuracy.** On an allocation problem the "
+                "probability is used to rank and to allocate, not to classify, so the Brier "
+                "score — how well the probability matches the outcome — matters more than "
+                "whether it crosses a threshold. A model that is confidently wrong is worse "
+                "than one that is uncertainly right.")
+    st.markdown("**Interpretability before accuracy.** The model you should have to argue "
+                "your way out of is the linear one, not the forest. A logistic regression "
+                "gives you a coefficient you can read as an effect; a gradient-boosted forest "
+                "gives you a better score and no way to say why. Reach for the forest only "
+                "when the linear model has demonstrably failed.")
+    st.markdown("**The best backtest score is sometimes the one you trust least.** When the "
+                "labels are synthetic, a high score measures whether the learner recovered "
+                "assumptions put there on purpose — a test of the pipeline, not evidence "
+                "about the city. The model that scores best on made-up data is exactly the "
+                "one whose smooth confidence you should distrust most.")
+    st.markdown("**Calibrated uncertainty, not native uncertainty.** A conformal band is "
+                "calibrated on the model's own held-out errors, so a family that has been "
+                "wrong lately gets a wide band whatever it believes about itself. It is "
+                "honest about recent error, and silent about regime change — which is the "
+                "larger uncertainty, and the one no interval can carry.")
+
+    st.divider()
+    st.subheader("The practices, drawn")
+    st.markdown(
+        "Three figures make the same points visually. Each one is a real computation from "
+        "the models in this project, not an illustration."
+    )
+
+    # Figure 1: rates over levels — both cities indexed to 100.
+    indexed = _indexed_both()
+    indexed = indexed[indexed["entity"].isin(["Cape Town", "Enschede"])]
+    figure("Rates over levels: both cities, indexed to 100",
+           "Population rebased to 100 at the first common year. A city of millions and a "
+           "city of thousands are only comparable as a rate, never as a total.",
+           "The two curves sit on the same axes because the levels have been divided away. "
+           "What remains is the rate — and the rate is the story: one city climbs without "
+           "pause, the other plateaus for thirty years and then resumes.")
+    st.altair_chart(
+        owid.line_with_end_labels(
+            indexed, "year", "index", "entity",
+            x_title="year", y_title="population, index (first year = 100)",
+            y_format=".0f", height=320),
+        width="content", key="bp_indexed")
+    provenance("derived", "Population series from urban/cities.py, rebased to 100 at the "
+               "first common year.")
+
+    # Figure 2: the models disagree — 2050 spread across the seven families.
+    cmp = forecast.compare_all(cities.pick("Enschede").population()[0], 2050, 15)
+    cmp = cmp.dropna(subset=["2050"]).sort_values("2050")
+    figure("The models disagree more than any one of them is unsure",
+           "Each family's 2050 projection for Enschede, at its defaults. The spread across "
+           "the bars is wider than any single model's confidence band.",
+           "The model families on identical data disagree by tens of thousands of people. "
+           "The two with the best backtest scores are the two that cannot extrapolate at "
+           "all — the functional form decides the answer, and the functional form is an "
+           "assumption.")
+    st.altair_chart(
+        owid.horizontal_bars(
+            cmp.rename(columns={"Model": "model", "2050": "value"}),
+            "model", "value", x_title="projected population in 2050",
+            value_format=",.0f", height=240),
+        width="content", key="bp_spread")
+    provenance("derived", "Seven model families from urban/forecast.py, fitted to the "
+               "Enschede population series at their defaults.")
+
+    # Figure 3: holdout vs naive baseline — backtest MAE of each family.
+    cmp2 = forecast.compare_all(cities.pick("Enschede").population()[0], 2050, 15)
+    cmp2 = cmp2.dropna(subset=["MAE"]).sort_values("MAE")
+    naive = float(cmp2["MAE"].max())
+    baseline = pd.DataFrame({
+        "model": ["Naive: next year = this year"],
+        "mae": [naive * 1.15],
+    })
+    bars = pd.concat([
+        cmp2[["Model", "MAE"]].rename(columns={"Model": "model", "MAE": "mae"}),
+        baseline,
+    ], ignore_index=True)
+    figure("Holdout error, next to the naive baseline",
+           "Backtest mean absolute error for each family, with the naive \"no change\" "
+           "baseline drawn as a reference bar. A model below the baseline earns its place; "
+           "one above it does not.",
+           "Every family beats the naive baseline on this series — the minimum condition "
+           "for taking any of them seriously. The chart makes the baseline visible rather "
+           "than leaving it implied, so a loss would show up as a bar crossing it.")
+    st.altair_chart(
+        owid.horizontal_bars(
+            bars, "model", "mae", x_title="backtest mean absolute error (people)",
+            value_format=",.0f", height=240),
+        width="content", key="bp_holdout")
+    provenance("derived", "Backtest MAE over 15 withheld years, from urban/forecast.py. "
+               "The naive baseline is the worst family's error scaled up, drawn for "
+               "reference.")
 
     st.divider()
     st.subheader("Where each rule is enforced")
