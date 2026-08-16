@@ -17,3 +17,8 @@ venv/
 # Streamlit Cloud secrets — never commit an API key
 .streamlit/secrets.toml
 .env
+
+# KINETIEK
+data/raw/
+data/interim/
+build/

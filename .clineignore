@@ -1,0 +1,17 @@
+# Never let the agent read these. One accidental read of a 40 MB file
+# ends the token budget.
+data/
+*.parquet
+*.geojson
+*.tif
+*.zip
+.venv/
+site/
+.git/
+node_modules/
+.next/
+__pycache__/
+build/
+.pytest_cache/
+package-lock.json
+repro_lock.txt
