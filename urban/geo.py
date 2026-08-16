@@ -5,14 +5,15 @@ a stylisation, and hard to relate to anywhere you have actually been. These are
 the same analyses on real latitude and longitude with an OpenStreetMap
 background, so a station is where the station is and a 800 m circle is 800 m.
 
-Two things to know about the tiles.
+Two things to know about the basemap.
 
-  * The basemap is fetched from CARTO's public tile servers at view
-    time. That needs outbound internet from wherever the app runs. Streamlit
-    Cloud has it; the sandbox this was written in did not, so the tile rendering
-    could not be verified locally — the layers, coordinates and radii could.
+  * The basemap is CARTO's "Positron without labels" vector style, fetched at
+    view time. That needs outbound internet from wherever the app runs.
+    Streamlit Cloud has it; the sandbox this was written in did not, so the
+    tile rendering could not be verified locally — the layers, coordinates and
+    radii could.
   * CARTO and OSM attribution policy requires attribution, and every map here
-    carries it.
+    carries it in the caption below the map.
 
 Coordinates are given to four decimal places, which is about ten metres, and
 they are hand-placed rather than geocoded. That is well inside the tolerance of
@@ -26,14 +27,20 @@ import pydeck as pdk
 
 from .theme import SERIES
 
-# A clean, minimal basemap rather than raw OpenStreetMap raster. The default
-# OSM tiles carry every street name and place label baked into the image,
-# which is noisy, ugly, and fights the data layers drawn on top of it. CartoDB
-# Positron is a desaturated, label-light style derived from OSM data: the
-# streets and blocks are there as pale geometry, but the text is gone, so the
-# coloured layers and the hand-placed TextLayer labels are what read. No API
-# key and no account, like the OSM tiles it replaces.
-BASEMAP_TILES = "https://basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png"
+# The basemap is pydeck's built-in CARTO "Positron without labels" vector
+# style, selected with `map_style="light_no_labels"` and
+# `map_provider="carto"` on each Deck. A hosted vector style rather than a raw
+# raster TileLayer, for two reasons:
+#
+#   * The raw raster approach left MapLibre's default attribution control
+#     ("© Mapbox © OpenStreetMap") floating in the corner of every map — stray
+#     text that fought the hand-placed labels. A proper map style carries its
+#     own attribution, so the corner is clean and the credit lives in the
+#     caption below the map instead.
+#   * Positron-without-labels keeps the street and block geometry as pale
+#     lines but drops every street-name and place-label, so the coloured data
+#     layers and the hand-placed TextLayer labels are what the eye lands on.
+#     No API key and no account, like the OSM tiles it replaces.
 BASEMAP_ATTRIBUTION = (
     "Basemap © CARTO · © OpenStreetMap contributors, ODbL."
 )
@@ -104,29 +111,6 @@ KIND_COLOUR = {
 # Map builders
 # ---------------------------------------------------------------------
 
-def _tile_layer() -> pdk.Layer:
-    """The basemap: CartoDB Positron, a clean label-light raster style.
-
-    A raw tile layer rather than a hosted vector style, so the map needs no API
-    key and no account — which matters for something meant to be forked and run
-    by someone else. The `light_nolabels` variant keeps the street and block
-    geometry as pale lines but drops every street-name and place-label, so the
-    data layers and the hand-placed TextLayer labels are what the eye lands on.
-    (`light_all`, the default alternative, still bakes dark labels into the
-    tiles and is what read as stray black text on the maps.) The tiles sit at
-    near-full opacity because the style is already pale; the previous 0.62 was
-    needed to push the cluttered OSM tiles back, and is no longer necessary.
-    """
-    return pdk.Layer(
-        "TileLayer",
-        data=BASEMAP_TILES,
-        min_zoom=0,
-        max_zoom=20,
-        tile_size=256,
-        opacity=0.92,
-    )
-
-
 def station_catchment_map(
     radius_m: float,
     *,
@@ -147,7 +131,6 @@ def station_catchment_map(
 
     return pdk.Deck(
         layers=[
-            _tile_layer(),
             pdk.Layer(
                 "ScatterplotLayer",
                 data=df,
@@ -177,8 +160,8 @@ def station_catchment_map(
             latitude=centre[0], longitude=centre[1], zoom=zoom, pitch=0),
         tooltip={"text": "{name}\n{note}"},
         height=height,
-        map_provider=None,   # the tile layer is the basemap; no provider needed
-        map_style=None,
+        map_provider="carto",
+        map_style="light_no_labels",
     )
 
 
@@ -195,7 +178,6 @@ def places_map(
 
     return pdk.Deck(
         layers=[
-            _tile_layer(),
             pdk.Layer(
                 "ScatterplotLayer",
                 data=df,
@@ -226,8 +208,8 @@ def places_map(
             latitude=centre[0], longitude=centre[1], zoom=zoom, pitch=0),
         tooltip={"text": "{name} — {kind}"},
         height=height,
-        map_provider=None,
-        map_style=None,
+        map_provider="carto",
+        map_style="light_no_labels",
     )
 
 
@@ -326,11 +308,11 @@ def gravity_flow_map(flows: pd.DataFrame, *,
         pickable=False,
     )
     return pdk.Deck(
-        layers=[_tile_layer(), arcs, towns, labels, origin_pt],
+        layers=[arcs, towns, labels, origin_pt],
         initial_view_state=pdk.ViewState(
             latitude=centre[0], longitude=centre[1], zoom=zoom, pitch=0),
         tooltip={"text": "{name}\npopulation {population}\nflow {flow}"},
         height=height,
-        map_provider=None,
-        map_style=None,
+        map_provider="carto",
+        map_style="light_no_labels",
     )
